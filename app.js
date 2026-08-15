@@ -8,7 +8,6 @@ import {
 } from "./config.js";
 
 import {
-  TYPES,
   createPiece,
   cells,
   getShape,
@@ -56,7 +55,9 @@ const $ = selector =>
   document.querySelector(selector);
 
 const $$ = selector =>
-  [...document.querySelectorAll(selector)];
+  Array.from(
+    document.querySelectorAll(selector)
+  );
 
 
 const screens = {
@@ -153,74 +154,8 @@ window.KasaneSaveSettings = settings => {
   };
 
   saveData(data);
-};
-
-
-/* =========================================================
-   GAME
-========================================================= */
-
-const game = {
-
-  running: false,
-  paused: false,
-  over: false,
-
-  mode: "marathon",
-  modeConfig: getMode("marathon"),
-
-  board: createBoard(),
-  randomizer: createRandomizer(),
-
-  current: null,
-  next: [],
-  hold: null,
-
-  holdUsed: false,
-
-  score: 0,
-  lines: 0,
-  level: 1,
-
-  combo: -1,
-  b2b: false,
-
-  lastActionWasRotation: false,
-
-  dropInterval: 900,
-  accumulator: 0,
-
-  lastTime: 0,
-  startTime: 0,
-
-  animationFrame: null,
-
-  softDropping: false,
-
-  ultraEndTime: null,
-  ultraRemaining: 120,
-
-  /* touch */
-  pointer: {
-    active: false,
-    id: null,
-    startX: 0,
-    startY: 0,
-    lastX: 0,
-    lastY: 0,
-    startTime: 0,
-    moved: false,
-    longPressTimer: null,
-    longPressTriggered: false
-  }
 
 };
-
-
-let selectedMode = "marathon";
-let currentScreen = "home";
-
-let toastTimer = null;
 
 
 /* =========================================================
@@ -230,7 +165,7 @@ let toastTimer = null;
 const translations = {
 
   "zh-TW": {
-    title: "Tetris",
+    title: "Kasane",
     subtitle: "一格一格，慢慢堆成自己的節奏。",
     start: "開始遊戲",
     records: "紀錄",
@@ -306,7 +241,7 @@ const translations = {
   },
 
   "en": {
-    title: "Tetris",
+    title: "Kasane",
     subtitle: "One block at a time. Find your rhythm.",
     start: "Start Game",
     records: "Records",
@@ -382,8 +317,8 @@ const translations = {
   },
 
   "ja": {
-    title: "テトリス",
-    subtitle: "ひとつずつ、ゆっくり自分のリズムで。",
+    title: "カサネ",
+    subtitle: "ひとつずつ、自分のリズムで。",
     start: "ゲーム開始",
     records: "記録",
     settings: "設定",
@@ -458,7 +393,7 @@ const translations = {
   },
 
   "ko": {
-    title: "테트리스",
+    title: "카사네",
     subtitle: "한 칸씩, 나만의 리듬으로.",
     start: "게임 시작",
     records: "기록",
@@ -525,9 +460,9 @@ const translations = {
 
     clear: "CLEAR",
     timeUp: "시간 종료",
-    fortyLines: "40줄 완료",
+    fortyLines: "40줄 달성",
     finished: "게임 종료",
-    completed: "잘했어요",
+    completed: "잘했어",
 
     perfect: "Perfect Clear",
     tetris: "TETRIS"
@@ -536,12 +471,10 @@ const translations = {
 };
 
 
-function detectLanguage() {
+function getLanguage() {
 
   const saved =
-    localStorage.getItem(
-      "kasane-language"
-    );
+    data.settings?.language;
 
   if (
     saved &&
@@ -552,32 +485,43 @@ function detectLanguage() {
 
   }
 
-  const language =
+  const browser =
     navigator.language
-      ?.toLowerCase() ||
-    "zh-tw";
+      ?.toLowerCase();
 
   if (
-    language.startsWith("ja")
-  ) return "ja";
+    browser.startsWith("ja")
+  ) {
+
+    return "ja";
+
+  }
 
   if (
-    language.startsWith("ko")
-  ) return "ko";
+    browser.startsWith("ko")
+  ) {
+
+    return "ko";
+
+  }
 
   if (
-    language.startsWith("en")
-  ) return "en";
+    browser.startsWith("en")
+  ) {
+
+    return "en";
+
+  }
 
   return "zh-TW";
+
 }
 
 
-let language =
-  detectLanguage();
-
-
 function t(key) {
+
+  const language =
+    getLanguage();
 
   return (
     translations[language]?.[key] ??
@@ -588,245 +532,125 @@ function t(key) {
 }
 
 
-function setText(id, value) {
+function applyI18n() {
 
-  const node =
-    document.getElementById(id);
+  document
+    .querySelectorAll(
+      "[data-i18n]"
+    )
+    .forEach(
+      node => {
 
-  if (node) {
-    node.textContent = value;
-  }
+        const key =
+          node.dataset.i18n;
 
-}
+        const value =
+          t(key);
 
+        if (
+          value != null
+        ) {
 
-function applyI18N() {
+          node.textContent =
+            value;
+
+        }
+
+      }
+    );
 
   document.documentElement.lang =
-    language === "zh-TW"
-      ? "zh-TW"
-      : language;
-
-  document.title =
-    t("title");
-
-  setText(
-    "startButton",
-    t("start")
-  );
-
-  setText(
-    "recordsButton",
-    t("records")
-  );
-
-  setText(
-    "settingsButton",
-    t("settings")
-  );
-
-  setText(
-    "beginButton",
-    t("begin")
-  );
-
-  setText(
-    "pauseButton",
-    t("pause")
-  );
-
-  setText(
-    "resumeButton",
-    t("resume")
-  );
-
-  setText(
-    "againButton",
-    t("again")
-  );
-
-  setText(
-    "homeButton",
-    t("backHome")
-  );
-
-  setText(
-    "clearRecordsButton",
-    t("clearRecords")
-  );
-
-  setText(
-    "resultMarkText",
-    t("gameOver")
-  );
-
-  setText(
-    "resultKicker",
-    t("gameOver")
-  );
-
-  const subtitle =
-    document.querySelector(
-      ".subtitle"
-    );
-
-  if (subtitle) {
-    subtitle.textContent =
-      t("subtitle");
-  }
-
-  const setupTitle =
-    document.querySelector(
-      "#setupScreen h2"
-    );
-
-  if (setupTitle) {
-    setupTitle.textContent =
-      t("modes");
-  }
-
-  const recordsTitle =
-    document.querySelector(
-      "#recordsScreen h2"
-    );
-
-  if (recordsTitle) {
-    recordsTitle.textContent =
-      t("recordTitle");
-  }
-
-  const settingsTitle =
-    document.querySelector(
-      "#settingsScreen h2"
-    );
-
-  if (settingsTitle) {
-    settingsTitle.textContent =
-      t("settingsTitle");
-  }
-
-
-  const modeCards =
-    $$(".mode-card");
-
-  modeCards.forEach(card => {
-
-    const mode =
-      card.dataset.mode;
-
-    const strong =
-      card.querySelector("strong");
-
-    const span =
-      card.querySelector("span");
-
-    if (!mode) return;
-
-    const nameKey =
-      mode === "marathon"
-        ? "marathon"
-        : mode;
-
-    const descKey =
-      `${mode}Desc`;
-
-    if (strong) {
-      strong.textContent =
-        t(nameKey);
-    }
-
-    if (span) {
-      span.textContent =
-        t(descKey);
-    }
-
-  });
-
-
-  /* language selector */
-
-  let languageRow =
-    document.getElementById(
-      "languageSettingRow"
-    );
-
-  if (!languageRow) {
-
-    const settingsList =
-      document.querySelector(
-        ".settings-list"
-      );
-
-    if (settingsList) {
-
-      languageRow =
-        document.createElement(
-          "label"
-        );
-
-      languageRow.id =
-        "languageSettingRow";
-
-      languageRow.className =
-        "setting-row";
-
-      languageRow.innerHTML = `
-        <span>
-          <strong>${language === "zh-TW" ? "語言" : "Language"}</strong>
-          <small>中文 / English / 日本語 / 한국어</small>
-        </span>
-
-        <select id="languageSelect">
-          <option value="zh-TW">繁體中文</option>
-          <option value="en">English</option>
-          <option value="ja">日本語</option>
-          <option value="ko">한국어</option>
-        </select>
-      `;
-
-      settingsList.appendChild(
-        languageRow
-      );
-
-      languageRow
-        .querySelector(
-          "#languageSelect"
-        )
-        .addEventListener(
-          "change",
-          event => {
-
-            language =
-              event.target.value;
-
-            localStorage.setItem(
-              "kasane-language",
-              language
-            );
-
-            applyI18N();
-
-            renderRecords();
-
-          }
-        );
-
-    }
-
-  }
-
-
-  const languageSelect =
-    document.getElementById(
-      "languageSelect"
-    );
-
-  if (languageSelect) {
-    languageSelect.value =
-      language;
-  }
+    getLanguage();
 
 }
+
+
+/* =========================================================
+   GAME STATE
+========================================================= */
+
+const game = {
+
+  running: false,
+  paused: false,
+  over: false,
+
+  mode: "marathon",
+  modeConfig:
+    getMode("marathon"),
+
+  board:
+    createBoard(),
+
+  randomizer:
+    createRandomizer(),
+
+  current: null,
+  next: [],
+  hold: null,
+
+  holdUsed: false,
+
+  score: 0,
+  lines: 0,
+  level: 1,
+
+  combo: -1,
+  b2b: false,
+
+  lastActionWasRotation: false,
+
+  dropInterval: 900,
+  accumulator: 0,
+
+  lastTime: 0,
+  startTime: 0,
+
+  animationFrame: null,
+
+  softDropping: false,
+
+  ultraEndTime: null,
+  ultraRemaining: 120,
+
+  touch: {
+
+    active: false,
+    id: null,
+
+    startX: 0,
+    startY: 0,
+
+    lastX: 0,
+    lastY: 0,
+
+    startTime: 0,
+
+    moved: false,
+
+    actionStarted: false,
+
+    longPressTriggered: false,
+
+    longPressTimer: null,
+
+    repeatTimer: null,
+
+    softDropTimer: null
+
+  }
+
+};
+
+
+let selectedMode =
+  "marathon";
+
+let currentScreen =
+  "home";
+
+let toastTimer =
+  null;
 
 
 /* =========================================================
@@ -836,34 +660,46 @@ function applyI18N() {
 function syncSettings() {
 
   if (el.sound) {
+
     el.sound.checked =
       data.settings.sound !== false;
+
   }
 
   if (el.music) {
+
     el.music.checked =
       data.settings.music !== false;
+
   }
 
   if (el.ghost) {
+
     el.ghost.checked =
       data.settings.ghost !== false;
+
   }
 
   if (el.haptic) {
+
     el.haptic.checked =
       data.settings.haptic !== false;
+
   }
 
   if (el.motion) {
+
     el.motion.checked =
       data.settings.motion !== false;
+
   }
 
   if (el.theme) {
+
     el.theme.value =
       data.settings.theme ||
       "system";
+
   }
 
 }
@@ -890,25 +726,31 @@ function updateSetting(
 
 function applyTheme() {
 
-  document.documentElement.dataset.theme =
-    data.settings.theme ||
-    "system";
+  document.documentElement
+    .dataset
+    .theme =
+      data.settings.theme ||
+      "system";
 
 }
 
 
 /* =========================================================
-   SCREEN NAVIGATION
+   NAVIGATION
 ========================================================= */
 
-function showScreen(name) {
+function showScreen(
+  name
+) {
 
   Object.entries(
     screens
   ).forEach(
     ([key, screen]) => {
 
-      if (!screen) return;
+      if (!screen) {
+        return;
+      }
 
       screen.classList.toggle(
         "active",
@@ -921,26 +763,39 @@ function showScreen(name) {
   currentScreen =
     name;
 
-  if (name === "home") {
+  if (
+    name === "home"
+  ) {
+
     updateHome();
+
   }
 
-  if (name === "records") {
+  if (
+    name === "records"
+  ) {
+
     renderRecords();
+
   }
 
-  if (name === "settings") {
+  if (
+    name === "settings"
+  ) {
+
     syncSettings();
+
   }
 
-  if (name === "game") {
+  if (
+    name === "game"
+  ) {
 
     requestAnimationFrame(
       () => {
 
         resizeCanvas();
         draw();
-        focusCanvas();
 
       }
     );
@@ -951,6 +806,8 @@ function showScreen(name) {
 
 
 function goHome() {
+
+  cleanupTouch();
 
   if (
     game.running &&
@@ -972,39 +829,41 @@ function goHome() {
    MODE
 ========================================================= */
 
-function setupModes() {
+function setupModeSelection() {
 
   $$(".mode-card")
-    .forEach(card => {
+    .forEach(
+      button => {
 
-      card.addEventListener(
-        "click",
-        () => {
+        button.addEventListener(
+          "click",
+          () => {
 
-          $$(".mode-card")
-            .forEach(
-              item =>
-                item.classList.remove(
-                  "selected"
-                )
+            $$(".mode-card")
+              .forEach(
+                item =>
+                  item.classList.remove(
+                    "selected"
+                  )
+              );
+
+            button.classList.add(
+              "selected"
             );
 
-          card.classList.add(
-            "selected"
-          );
+            selectedMode =
+              button.dataset.mode ||
+              "marathon";
 
-          selectedMode =
-            card.dataset.mode ||
-            "marathon";
+            playSFX(
+              SFX.move
+            );
 
-          playSFX(
-            SFX.move
-          );
+          }
+        );
 
-        }
-      );
-
-    });
+      }
+    );
 
 }
 
@@ -1013,11 +872,14 @@ function setupModes() {
    QUEUE
 ========================================================= */
 
-function fillNext() {
+function fillNextQueue() {
+
+  const count =
+    CONFIG.NEXT_COUNT || 5;
 
   while (
     game.next.length <
-    CONFIG.NEXT_COUNT
+    count
   ) {
 
     game.next.push(
@@ -1029,14 +891,14 @@ function fillNext() {
 }
 
 
-function nextPiece() {
+function takeNextPiece() {
 
-  fillNext();
+  fillNextQueue();
 
   const type =
     game.next.shift();
 
-  fillNext();
+  fillNextQueue();
 
   return createPiece(
     type
@@ -1049,11 +911,13 @@ function nextPiece() {
    START
 ========================================================= */
 
-async function startGame(
-  mode = selectedMode
+function startGame(
+  modeId = selectedMode
 ) {
 
-  await unlockAudio();
+  cleanupTouch();
+
+  unlockAudio();
 
   game.running =
     true;
@@ -1065,19 +929,16 @@ async function startGame(
     false;
 
   game.mode =
-    mode;
+    modeId;
 
   game.modeConfig =
-    getMode(mode);
+    getMode(modeId);
 
   game.board =
     createBoard();
 
   game.randomizer =
     createRandomizer();
-
-  game.current =
-    null;
 
   game.next =
     [];
@@ -1126,27 +987,33 @@ async function startGame(
         1000
       : null;
 
-  fillNext();
+  fillNextQueue();
 
   game.current =
-    nextPiece();
+    takeNextPiece();
 
   updateGravity();
 
-  updateUI();
+  updateGameUI();
+
+  if (
+    el.pauseOverlay
+  ) {
+
+    el.pauseOverlay.hidden =
+      true;
+
+  }
 
   showScreen(
     "game"
   );
 
-  if (
-    el.pauseOverlay
-  ) {
-    el.pauseOverlay.hidden =
-      true;
-  }
+  focusGameCanvas();
 
-  focusCanvas();
+  playSFX(
+    SFX.resume
+  );
 
   cancelAnimationFrame(
     game.animationFrame
@@ -1157,21 +1024,23 @@ async function startGame(
       loop
     );
 
-  playSFX(
-    SFX.resume
-  );
-
 }
 
 
 /* =========================================================
-   GAME LOOP
+   LOOP
 ========================================================= */
 
-function loop(timestamp) {
+function loop(
+  timestamp
+) {
 
-  if (!game.running) {
+  if (
+    !game.running
+  ) {
+
     return;
+
   }
 
   const delta =
@@ -1247,19 +1116,17 @@ function update(
 
   }
 
-
   game.accumulator +=
     delta;
-
 
   const interval =
     game.softDropping
       ? Math.max(
-          28,
-          game.dropInterval / 18
+          25,
+          game.dropInterval /
+          (CONFIG.SOFT_DROP_FACTOR || 20)
         )
       : game.dropInterval;
-
 
   while (
     game.accumulator >=
@@ -1277,7 +1144,9 @@ function update(
         1
       );
 
-    if (moved) {
+    if (
+      moved
+    ) {
 
       game.current =
         moved;
@@ -1292,8 +1161,7 @@ function update(
 
   }
 
-
-  updateUI();
+  updateGameUI();
 
 }
 
@@ -1311,8 +1179,11 @@ function updateGravity() {
     );
 
   game.dropInterval =
-    game.modeConfig.gravity(
-      game.level
+    Math.max(
+      40,
+      game.modeConfig.gravity(
+        game.level
+      )
     );
 
 }
@@ -1322,30 +1193,16 @@ function updateGravity() {
    MOVE
 ========================================================= */
 
-function moveLeft() {
-
-  return moveHorizontal(
-    -1
-  );
-
-}
-
-
-function moveRight() {
-
-  return moveHorizontal(
-    1
-  );
-
-}
-
-
 function moveHorizontal(
   direction
 ) {
 
-  if (!canPlay()) {
+  if (
+    !canPlay()
+  ) {
+
     return false;
+
   }
 
   const moved =
@@ -1356,8 +1213,12 @@ function moveHorizontal(
       0
     );
 
-  if (!moved) {
+  if (
+    !moved
+  ) {
+
     return false;
+
   }
 
   game.current =
@@ -1375,6 +1236,8 @@ function moveHorizontal(
 
   vibrate(4);
 
+  draw();
+
   return true;
 
 }
@@ -1384,10 +1247,14 @@ function moveHorizontal(
    SOFT DROP
 ========================================================= */
 
-function softDropStep() {
+function softDrop() {
 
-  if (!canPlay()) {
+  if (
+    !canPlay()
+  ) {
+
     return false;
+
   }
 
   const moved =
@@ -1398,9 +1265,9 @@ function softDropStep() {
       1
     );
 
-  if (!moved) {
-
-    lockPiece();
+  if (
+    !moved
+  ) {
 
     return false;
 
@@ -1409,8 +1276,13 @@ function softDropStep() {
   game.current =
     moved;
 
+  game.lastActionWasRotation =
+    false;
+
   game.score +=
     CONFIG.SCORE.softDrop;
+
+  draw();
 
   return true;
 
@@ -1423,11 +1295,16 @@ function softDropStep() {
 
 function hardDrop() {
 
-  if (!canPlay()) {
+  if (
+    !canPlay()
+  ) {
+
     return;
+
   }
 
-  let distance = 0;
+  let distance =
+    0;
 
   while (true) {
 
@@ -1439,8 +1316,12 @@ function hardDrop() {
         1
       );
 
-    if (!moved) {
+    if (
+      !moved
+    ) {
+
       break;
+
     }
 
     game.current =
@@ -1458,7 +1339,7 @@ function hardDrop() {
     SFX.drop
   );
 
-  vibrate(12);
+  vibrate(10);
 
   lockPiece();
 
@@ -1470,11 +1351,15 @@ function hardDrop() {
 ========================================================= */
 
 function rotate(
-  direction = 1
+  direction
 ) {
 
-  if (!canPlay()) {
+  if (
+    !canPlay()
+  ) {
+
     return false;
+
   }
 
   const result =
@@ -1484,8 +1369,12 @@ function rotate(
       direction
     );
 
-  if (!result) {
+  if (
+    !result
+  ) {
+
     return false;
+
   }
 
   game.current =
@@ -1503,6 +1392,8 @@ function rotate(
 
   vibrate(4);
 
+  draw();
+
   return true;
 
 }
@@ -1518,15 +1409,19 @@ function holdPiece() {
     !canPlay() ||
     game.holdUsed
   ) {
+
     return;
+
   }
 
   const currentType =
     game.current.type;
 
-  if (game.hold) {
+  if (
+    game.hold
+  ) {
 
-    const swap =
+    const nextType =
       game.hold;
 
     game.hold =
@@ -1534,7 +1429,7 @@ function holdPiece() {
 
     game.current =
       createPiece(
-        swap
+        nextType
       );
 
   } else {
@@ -1543,7 +1438,7 @@ function holdPiece() {
       currentType;
 
     game.current =
-      nextPiece();
+      takeNextPiece();
 
   }
 
@@ -1559,6 +1454,8 @@ function holdPiece() {
 
   vibrate(7);
 
+  draw();
+
 }
 
 
@@ -1570,12 +1467,14 @@ function lockPiece() {
 
   if (
     !game.current ||
-    !game.running
+    game.over
   ) {
+
     return;
+
   }
 
-  const tSpin =
+  const wasTSpin =
     isTSpin(
       game.board,
       game.current,
@@ -1603,8 +1502,9 @@ function lockPiece() {
   const cleared =
     result.lines;
 
-
-  if (tSpin) {
+  if (
+    wasTSpin
+  ) {
 
     scoreTSpin(
       cleared
@@ -1625,49 +1525,27 @@ function lockPiece() {
 
   }
 
-
   game.lines +=
     cleared;
 
   updateGravity();
 
+  if (
+    cleared > 0
+  ) {
 
-  if (cleared > 0) {
-
-    if (tSpin) {
-
-      playSFX(
-        SFX.tSpin
-      );
-
-    } else if (
-      cleared === 4
-    ) {
-
-      playSFX(
-        SFX.tetris
-      );
-
-      showToast(
-        t("tetris")
-      );
-
-    } else {
-
-      playSFX(
-        SFX.line
-      );
-
-    }
+    playClearSound(
+      cleared,
+      wasTSpin
+    );
 
     vibrate(
-      cleared === 4
+      cleared >= 4
         ? 28
         : 10
     );
 
   }
-
 
   if (
     cleared > 0 &&
@@ -1685,7 +1563,6 @@ function lockPiece() {
 
   }
 
-
   if (
     game.mode === "sprint" &&
     game.lines >=
@@ -1700,16 +1577,14 @@ function lockPiece() {
 
   }
 
-
   game.current =
-    nextPiece();
+    takeNextPiece();
 
   game.holdUsed =
     false;
 
   game.lastActionWasRotation =
     false;
-
 
   if (
     collides(
@@ -1748,7 +1623,9 @@ function scoreNormalClear(
     lines === 4
   ) {
 
-    if (game.b2b) {
+    if (
+      game.b2b
+    ) {
 
       score =
         Math.floor(
@@ -1766,7 +1643,6 @@ function scoreNormalClear(
       false;
 
   }
-
 
   if (
     game.combo > 0
@@ -1795,7 +1671,7 @@ function scoreTSpin(
   game.combo +=
     1;
 
-  let score = 0;
+  let score;
 
   if (
     lines === 1
@@ -1825,12 +1701,12 @@ function scoreTSpin(
 
   }
 
-
   score *=
     game.level;
 
-
-  if (game.b2b) {
+  if (
+    game.b2b
+  ) {
 
     score =
       Math.floor(
@@ -1839,12 +1715,55 @@ function scoreTSpin(
 
   }
 
-
   game.b2b =
     lines > 0;
 
   game.score +=
     score;
+
+  playSFX(
+    SFX.tSpin
+  );
+
+}
+
+
+function playClearSound(
+  lines,
+  tSpin
+) {
+
+  if (
+    tSpin
+  ) {
+
+    playSFX(
+      SFX.tSpin
+    );
+
+    return;
+
+  }
+
+  if (
+    lines >= 4
+  ) {
+
+    playSFX(
+      SFX.tetris
+    );
+
+    showToast(
+      t("tetris")
+    );
+
+    return;
+
+  }
+
+  playSFX(
+    SFX.line
+  );
 
 }
 
@@ -1859,7 +1778,21 @@ function pauseGame() {
     !game.running ||
     game.over
   ) {
+
     return;
+
+  }
+
+  cleanupTouch();
+
+  if (
+    game.paused
+  ) {
+
+    resumeGame();
+
+    return;
+
   }
 
   game.paused =
@@ -1881,6 +1814,8 @@ function pauseGame() {
     SFX.pause
   );
 
+  draw();
+
 }
 
 
@@ -1890,8 +1825,12 @@ function resumeGame() {
     !game.running ||
     game.over
   ) {
+
     return;
+
   }
+
+  cleanupTouch();
 
   game.paused =
     false;
@@ -1917,7 +1856,9 @@ function resumeGame() {
     SFX.resume
   );
 
-  focusCanvas();
+  focusGameCanvas();
+
+  draw();
 
 }
 
@@ -1930,9 +1871,15 @@ function finishGame(
   completed
 ) {
 
-  if (game.over) {
+  if (
+    game.over
+  ) {
+
     return;
+
   }
+
+  cleanupTouch();
 
   game.over =
     true;
@@ -1946,13 +1893,15 @@ function finishGame(
   game.softDropping =
     false;
 
+  cancelAnimationFrame(
+    game.animationFrame
+  );
 
   const elapsed =
     (
       performance.now() -
       game.startTime
     ) / 1000;
-
 
   const result = {
 
@@ -1980,7 +1929,6 @@ function finishGame(
 
   };
 
-
   recordGame(
     data,
     result
@@ -1988,7 +1936,6 @@ function finishGame(
 
   window.KasaneData =
     data;
-
 
   playSFX(
     completed
@@ -1998,14 +1945,15 @@ function finishGame(
 
   vibrate(
     completed
-      ? 30
-      : 55
+      ? 35
+      : 60
   );
-
 
   showResult(
     result
   );
+
+  updateHome();
 
 }
 
@@ -2018,37 +1966,64 @@ function showResult(
   result
 ) {
 
-  if (el.resultScore) {
+  if (
+    el.resultScore
+  ) {
+
     el.resultScore.textContent =
-      result.score;
+      String(
+        result.score
+      );
+
   }
 
-  if (el.resultLines) {
+  if (
+    el.resultLines
+  ) {
+
     el.resultLines.textContent =
-      result.lines;
+      String(
+        result.lines
+      );
+
   }
 
-  if (el.resultLevel) {
+  if (
+    el.resultLevel
+  ) {
+
     el.resultLevel.textContent =
-      result.level;
+      String(
+        result.level
+      );
+
   }
 
-  if (el.resultMark) {
+  if (
+    el.resultMark
+  ) {
+
     el.resultMark.textContent =
       result.completed
         ? t("clear")
         : "GAME";
+
   }
 
-  if (el.resultKicker) {
+  if (
+    el.resultKicker
+  ) {
+
     el.resultKicker.textContent =
       result.completed
         ? t("gameComplete")
         : t("gameOver");
+
   }
 
-
-  if (el.resultTitle) {
+  if (
+    el.resultTitle
+  ) {
 
     if (
       result.mode === "sprint" &&
@@ -2076,27 +2051,20 @@ function showResult(
 
   }
 
+  if (
+    el.resultDescription
+  ) {
 
-  if (el.resultDescription) {
-
-    if (
+    el.resultDescription.textContent =
       result.mode === "sprint"
-    ) {
-
-      el.resultDescription.textContent =
-        result.completed
-          ? `${t("score")} ${formatTime(result.time)}`
-          : `${result.lines} ${t("lines")}`;
-
-    } else {
-
-      el.resultDescription.textContent =
-        `${result.lines} ${t("lines")} · ${result.score} ${t("score")}`;
-
-    }
+        ? (
+            result.completed
+              ? `${formatTime(result.time)}`
+              : `${result.lines} ${t("lines")}`
+          )
+        : `${result.lines} ${t("lines")} · ${result.score}`;
 
   }
-
 
   showScreen(
     "result"
@@ -2106,7 +2074,7 @@ function showResult(
 
 
 /* =========================================================
-   CAN PLAY
+   PLAY CHECK
 ========================================================= */
 
 function canPlay() {
@@ -2124,7 +2092,7 @@ function canPlay() {
 
 
 /* =========================================================
-   RESPONSIVE CANVAS
+   CANVAS
 ========================================================= */
 
 function resizeCanvas() {
@@ -2133,13 +2101,13 @@ function resizeCanvas() {
     !canvas ||
     !ctx
   ) {
-    return;
-  }
 
+    return;
+
+  }
 
   const rect =
     canvas.getBoundingClientRect();
-
 
   const dpr =
     Math.min(
@@ -2147,11 +2115,10 @@ function resizeCanvas() {
       2
     );
 
-
   const width =
     Math.max(
       1,
-      Math.round(
+      Math.floor(
         rect.width * dpr
       )
     );
@@ -2159,11 +2126,10 @@ function resizeCanvas() {
   const height =
     Math.max(
       1,
-      Math.round(
+      Math.floor(
         rect.height * dpr
       )
     );
-
 
   if (
     canvas.width !== width ||
@@ -2178,7 +2144,6 @@ function resizeCanvas() {
 
   }
 
-
   ctx.setTransform(
     dpr,
     0,
@@ -2191,48 +2156,46 @@ function resizeCanvas() {
 }
 
 
-/* =========================================================
-   BOARD GEOMETRY
-========================================================= */
-
-function geometry() {
+function getBoardGeometry() {
 
   const rect =
     canvas.getBoundingClientRect();
 
-  const cell =
-    Math.min(
-      rect.width /
-        CONFIG.WIDTH,
-      rect.height /
-        CONFIG.HEIGHT
-    );
-
-
   const width =
-    cell *
-    CONFIG.WIDTH;
+    rect.width;
 
   const height =
-    cell *
-    CONFIG.HEIGHT;
+    rect.height;
 
+  const cell =
+    Math.min(
+      width / CONFIG.WIDTH,
+      height / CONFIG.HEIGHT
+    );
+
+  const boardWidth =
+    cell * CONFIG.WIDTH;
+
+  const boardHeight =
+    cell * CONFIG.HEIGHT;
 
   return {
 
     x:
-      (rect.width -
-       width) / 2,
+      (width -
+       boardWidth) / 2,
 
     y:
-      (rect.height -
-       height) / 2,
+      (height -
+       boardHeight) / 2,
 
     cell,
 
-    width,
+    width:
+      boardWidth,
 
-    height
+    height:
+      boardHeight
 
   };
 
@@ -2249,16 +2212,15 @@ function draw() {
     !canvas ||
     !ctx
   ) {
-    return;
-  }
 
+    return;
+
+  }
 
   resizeCanvas();
 
-
   const rect =
     canvas.getBoundingClientRect();
-
 
   ctx.clearRect(
     0,
@@ -2267,12 +2229,10 @@ function draw() {
     rect.height
   );
 
-
   const g =
-    geometry();
+    getBoardGeometry();
 
-
-  drawBackground(
+  drawBoardBackground(
     g
   );
 
@@ -2280,12 +2240,13 @@ function draw() {
     g
   );
 
-  drawPlaced(
+  drawPlacedBlocks(
     g
   );
 
-
-  if (game.current) {
+  if (
+    game.current
+  ) {
 
     if (
       data.settings.ghost !== false
@@ -2305,21 +2266,22 @@ function draw() {
 
   }
 
-
-  drawFrame(
+  drawBoardFrame(
     g
   );
 
-  drawMiniPieces();
+  drawSidePreviews();
 
 }
 
 
 /* =========================================================
-   BACKGROUND
+   BOARD DRAW
 ========================================================= */
 
-function drawBackground(g) {
+function drawBoardBackground(
+  g
+) {
 
   const gradient =
     ctx.createLinearGradient(
@@ -2336,7 +2298,7 @@ function drawBackground(g) {
 
   gradient.addColorStop(
     1,
-    "#e4d8bd"
+    "#e7dbc0"
   );
 
   ctx.fillStyle =
@@ -2352,11 +2314,9 @@ function drawBackground(g) {
 }
 
 
-/* =========================================================
-   GRID
-========================================================= */
-
-function drawGrid(g) {
+function drawGrid(
+  g
+) {
 
   ctx.save();
 
@@ -2366,7 +2326,6 @@ function drawGrid(g) {
   ctx.lineWidth =
     1;
 
-
   for (
     let x = 0;
     x <= CONFIG.WIDTH;
@@ -2375,8 +2334,7 @@ function drawGrid(g) {
 
     const px =
       g.x +
-      x *
-      g.cell;
+      x * g.cell;
 
     ctx.beginPath();
 
@@ -2387,14 +2345,12 @@ function drawGrid(g) {
 
     ctx.lineTo(
       px,
-      g.y +
-      g.height
+      g.y + g.height
     );
 
     ctx.stroke();
 
   }
-
 
   for (
     let y = 0;
@@ -2404,8 +2360,7 @@ function drawGrid(g) {
 
     const py =
       g.y +
-      y *
-      g.cell;
+      y * g.cell;
 
     ctx.beginPath();
 
@@ -2415,8 +2370,7 @@ function drawGrid(g) {
     );
 
     ctx.lineTo(
-      g.x +
-      g.width,
+      g.x + g.width,
       py
     );
 
@@ -2429,15 +2383,12 @@ function drawGrid(g) {
 }
 
 
-/* =========================================================
-   PLACED
-========================================================= */
-
-function drawPlaced(g) {
+function drawPlacedBlocks(
+  g
+) {
 
   const hidden =
     CONFIG.HIDDEN_ROWS;
-
 
   for (
     let y = hidden;
@@ -2454,8 +2405,12 @@ function drawPlaced(g) {
       const type =
         game.board[y][x];
 
-      if (!type) {
+      if (
+        !type
+      ) {
+
         continue;
+
       }
 
       drawCell(
@@ -2473,34 +2428,27 @@ function drawPlaced(g) {
 }
 
 
-/* =========================================================
-   GHOST
-========================================================= */
+function drawGhost(
+  g
+) {
 
-function drawGhost(g) {
-
-  const y =
+  const gy =
     ghostY(
       game.board,
       game.current
     );
 
-
   drawPiece(
     g,
     {
       ...game.current,
-      y
+      y: gy
     },
-    0.18
+    0.20
   );
 
 }
 
-
-/* =========================================================
-   PIECE
-========================================================= */
 
 function drawPiece(
   g,
@@ -2511,20 +2459,20 @@ function drawPiece(
   const hidden =
     CONFIG.HIDDEN_ROWS;
 
-
   for (
     const cell of cells(piece)
   ) {
 
     const visibleY =
-      cell.y -
-      hidden;
+      cell.y - hidden;
 
     if (
       visibleY < 0 ||
       visibleY >= CONFIG.HEIGHT
     ) {
+
       continue;
+
     }
 
     drawCell(
@@ -2540,10 +2488,6 @@ function drawPiece(
 }
 
 
-/* =========================================================
-   CELL
-========================================================= */
-
 function drawCell(
   g,
   x,
@@ -2554,27 +2498,23 @@ function drawCell(
 
   const px =
     g.x +
-    x *
-    g.cell;
+    x * g.cell;
 
   const py =
     g.y +
-    y *
-    g.cell;
+    y * g.cell;
 
   const size =
     g.cell;
-
-  const color =
-    COLORS[type] ||
-    "#888";
-
 
   ctx.save();
 
   ctx.globalAlpha =
     alpha;
 
+  const color =
+    COLORS[type] ||
+    "#888";
 
   if (
     alpha < 1
@@ -2586,26 +2526,21 @@ function drawCell(
     ctx.lineWidth =
       Math.max(
         1,
-        size * .07
+        size * .08
       );
 
-    roundRect(
-      ctx,
-      px + size * .14,
-      py + size * .14,
-      size * .72,
-      size * .72,
-      size * .14
+    ctx.strokeRect(
+      px + size * .13,
+      py + size * .13,
+      size * .74,
+      size * .74
     );
-
-    ctx.stroke();
 
     ctx.restore();
 
     return;
 
   }
-
 
   const gradient =
     ctx.createLinearGradient(
@@ -2615,12 +2550,11 @@ function drawCell(
       py + size
     );
 
-
   gradient.addColorStop(
     0,
     lighten(
       color,
-      .18
+      .15
     )
   );
 
@@ -2629,10 +2563,8 @@ function drawCell(
     color
   );
 
-
   ctx.fillStyle =
     gradient;
-
 
   roundRect(
     ctx,
@@ -2645,16 +2577,23 @@ function drawCell(
 
   ctx.fill();
 
-
   ctx.strokeStyle =
-    "rgba(255,255,255,.32)";
+    "rgba(255,255,255,.30)";
 
   ctx.lineWidth =
     Math.max(
       1,
-      size * .04
+      size * .045
     );
 
+  roundRect(
+    ctx,
+    px + size * .07,
+    py + size * .07,
+    size * .86,
+    size * .86,
+    size * .16
+  );
 
   ctx.stroke();
 
@@ -2663,16 +2602,14 @@ function drawCell(
 }
 
 
-/* =========================================================
-   FRAME
-========================================================= */
-
-function drawFrame(g) {
+function drawBoardFrame(
+  g
+) {
 
   ctx.save();
 
   ctx.strokeStyle =
-    "rgba(71,90,97,.4)";
+    "rgba(71,90,97,.42)";
 
   ctx.lineWidth =
     2;
@@ -2690,23 +2627,27 @@ function drawFrame(g) {
 
 
 /* =========================================================
-   MINI PREVIEWS
+   PREVIEWS
 ========================================================= */
 
-function drawMiniPieces() {
+function drawSidePreviews() {
 
-  drawMini(
+  drawMiniPiece(
     holdCtx,
     holdCanvas,
     game.hold
   );
 
-
   nextCanvases.forEach(
-    (target, index) => {
+    (
+      target,
+      index
+    ) => {
 
-      drawMini(
-        target.getContext("2d"),
+      drawMiniPiece(
+        target.getContext(
+          "2d"
+        ),
         target,
         game.next[index]
       );
@@ -2717,26 +2658,26 @@ function drawMiniPieces() {
 }
 
 
-function drawMini(
+function drawMiniPiece(
   context,
-  target,
+  targetCanvas,
   type
 ) {
 
   if (
     !context ||
-    !target
+    !targetCanvas
   ) {
+
     return;
+
   }
 
-
   const width =
-    target.width;
+    targetCanvas.width;
 
   const height =
-    target.height;
-
+    targetCanvas.height;
 
   context.clearRect(
     0,
@@ -2745,11 +2686,13 @@ function drawMini(
     height
   );
 
+  if (
+    !type
+  ) {
 
-  if (!type) {
     return;
-  }
 
+  }
 
   const shape =
     getShape(
@@ -2757,9 +2700,10 @@ function drawMini(
       0
     );
 
-
-  const filled = [];
-
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
 
   for (
     let y = 0;
@@ -2773,126 +2717,142 @@ function drawMini(
       x++
     ) {
 
-      if (shape[y][x]) {
+      if (
+        !shape[y][x]
+      ) {
 
-        filled.push({
-          x,
-          y
-        });
+        continue;
 
       }
+
+      minX =
+        Math.min(
+          minX,
+          x
+        );
+
+      minY =
+        Math.min(
+          minY,
+          y
+        );
+
+      maxX =
+        Math.max(
+          maxX,
+          x
+        );
+
+      maxY =
+        Math.max(
+          maxY,
+          y
+        );
 
     }
 
   }
 
+  const cellsWidth =
+    maxX - minX + 1;
 
-  if (!filled.length) {
-    return;
-  }
-
-
-  const minX =
-    Math.min(
-      ...filled.map(
-        item => item.x
-      )
-    );
-
-  const maxX =
-    Math.max(
-      ...filled.map(
-        item => item.x
-      )
-    );
-
-  const minY =
-    Math.min(
-      ...filled.map(
-        item => item.y
-      )
-    );
-
-  const maxY =
-    Math.max(
-      ...filled.map(
-        item => item.y
-      )
-    );
-
-
-  const columns =
-    maxX -
-    minX +
-    1;
-
-  const rows =
-    maxY -
-    minY +
-    1;
-
+  const cellsHeight =
+    maxY - minY + 1;
 
   const size =
     Math.min(
       22,
       width /
-        (columns + 1),
+        (cellsWidth + 1),
       height /
-        (rows + 1)
+        (cellsHeight + 1)
     );
 
-
-  const ox =
+  const offsetX =
     (
       width -
-      columns * size
+      cellsWidth * size
     ) / 2;
 
-  const oy =
+  const offsetY =
     (
       height -
-      rows * size
+      cellsHeight * size
     ) / 2;
 
-
   for (
-    const cell of filled
+    let y = 0;
+    y < shape.length;
+    y++
   ) {
 
-    const x =
-      ox +
-      (
-        cell.x -
-        minX
-      ) * size;
+    for (
+      let x = 0;
+      x < shape[y].length;
+      x++
+    ) {
 
-    const y =
-      oy +
-      (
-        cell.y -
-        minY
-      ) * size;
+      if (
+        !shape[y][x]
+      ) {
 
+        continue;
 
-    context.save();
+      }
 
-    context.fillStyle =
-      COLORS[type];
+      drawMiniCell(
+        context,
+        offsetX +
+        (x - minX) * size,
+        offsetY +
+        (y - minY) * size,
+        size,
+        COLORS[type]
+      );
 
-    roundRect(
-      context,
-      x + size * .08,
-      y + size * .08,
-      size * .84,
-      size * .84,
-      size * .15
-    );
-
-    context.fill();
-
-    context.restore();
+    }
 
   }
+
+}
+
+
+function drawMiniCell(
+  context,
+  x,
+  y,
+  size,
+  color
+) {
+
+  context.save();
+
+  context.fillStyle =
+    color;
+
+  roundRect(
+    context,
+    x + size * .08,
+    y + size * .08,
+    size * .84,
+    size * .84,
+    size * .15
+  );
+
+  context.fill();
+
+  context.strokeStyle =
+    "rgba(255,255,255,.35)";
+
+  context.lineWidth =
+    Math.max(
+      1,
+      size * .04
+    );
+
+  context.stroke();
+
+  context.restore();
 
 }
 
@@ -2901,65 +2861,95 @@ function drawMini(
    UI
 ========================================================= */
 
-function updateUI() {
+function updateGameUI() {
 
   if (el.mode) {
+
     el.mode.textContent =
       game.modeConfig.name;
+
   }
 
   if (el.level) {
+
     el.level.textContent =
-      game.level;
+      String(
+        game.level
+      );
+
   }
 
   if (el.score) {
+
     el.score.textContent =
-      game.score;
+      String(
+        game.score
+      );
+
   }
 
   if (el.lines) {
+
     el.lines.textContent =
-      game.lines;
+      String(
+        game.lines
+      );
+
   }
 
   if (el.combo) {
+
     el.combo.textContent =
-      Math.max(
-        0,
-        game.combo
+      String(
+        Math.max(
+          0,
+          game.combo
+        )
       );
+
   }
 
   if (el.b2b) {
+
     el.b2b.textContent =
       game.b2b
         ? "ON"
         : "0";
+
   }
 
   if (el.mobileScore) {
+
     el.mobileScore.textContent =
-      game.score;
+      String(
+        game.score
+      );
+
   }
 
   if (el.mobileLines) {
-    el.mobileLines.textContent =
-      game.lines;
-  }
 
-  drawMiniPieces();
+    el.mobileLines.textContent =
+      String(
+        game.lines
+      );
+
+  }
 
 }
 
 
 function updateHome() {
 
-  if (el.best) {
+  if (
+    el.best
+  ) {
 
     el.best.textContent =
-      data.stats.bestScore ||
-      0;
+      String(
+        data.stats?.bestScore ||
+        0
+      );
 
   }
 
@@ -2973,40 +2963,55 @@ function updateHome() {
 function renderRecords() {
 
   if (el.gamesStat) {
+
     el.gamesStat.textContent =
-      data.stats.games || 0;
+      String(
+        data.stats?.games || 0
+      );
+
   }
 
   if (el.bestStat) {
+
     el.bestStat.textContent =
-      data.stats.bestScore || 0;
+      String(
+        data.stats?.bestScore || 0
+      );
+
   }
 
   if (el.linesStat) {
+
     el.linesStat.textContent =
-      data.stats.bestLines || 0;
+      String(
+        data.stats?.bestLines || 0
+      );
+
   }
 
   if (el.sprintStat) {
 
     el.sprintStat.textContent =
       formatTime(
-        data.stats.bestSprint
+        data.stats?.bestSprint || 0
       );
 
   }
 
+  if (
+    !el.recordList
+  ) {
 
-  if (!el.recordList) {
     return;
-  }
 
+  }
 
   el.recordList.innerHTML =
     "";
 
-
-  if (!data.records.length) {
+  if (
+    !data.records?.length
+  ) {
 
     const empty =
       document.createElement(
@@ -3027,7 +3032,6 @@ function renderRecords() {
 
   }
 
-
   data.records.forEach(
     record => {
 
@@ -3039,477 +3043,51 @@ function renderRecords() {
       item.className =
         "record-item";
 
-
       const date =
         new Date(
           record.date
         );
 
-
-      const modeName =
-        translations[language]?.[
-          record.mode
-        ] ||
-        record.mode;
-
-
       item.innerHTML = `
+
         <div>
           <strong>
-            ${escapeHTML(modeName)}
+            ${escapeHTML(
+              record.mode
+            )}
           </strong>
 
           <span>
             ${date.toLocaleDateString(
-              language === "zh-TW"
+              getLanguage() === "zh-TW"
                 ? "zh-TW"
-                : language
+                : getLanguage()
             )}
           </span>
         </div>
 
         <div>
           <strong>
-            ${record.score}
+            ${Number(
+              record.score || 0
+            )}
           </strong>
 
           <span>
-            ${record.lines} ${escapeHTML(
+            ${Number(
+              record.lines || 0
+            )} ${escapeHTML(
               t("lines")
             )}
           </span>
         </div>
-      `;
 
+      `;
 
       el.recordList.appendChild(
         item
       );
 
-    }
-  );
-
-}
-
-
-/* =========================================================
-   TOUCH GESTURES
-========================================================= */
-
-/*
-   Gesture design:
-
-   TAP
-   -> rotate clockwise
-
-   SWIPE LEFT
-   -> move left
-
-   SWIPE RIGHT
-   -> move right
-
-   SWIPE DOWN
-   -> hard drop
-
-   SWIPE UP
-   -> hold
-
-   LONG PRESS
-   -> soft drop
-
-   This deliberately removes the old
-   mobile arrow-button system.
-*/
-
-
-function setupTouchControls() {
-
-  if (!canvas) {
-    return;
-  }
-
-
-  canvas.style.touchAction =
-    "none";
-
-
-  canvas.addEventListener(
-    "contextmenu",
-    event => {
-      event.preventDefault();
-    }
-  );
-
-
-  canvas.addEventListener(
-    "pointerdown",
-    event => {
-
-      if (
-        event.pointerType ===
-        "mouse" &&
-        event.button !== 0
-      ) {
-        return;
-      }
-
-
-      if (
-        currentScreen !== "game"
-      ) {
-        return;
-      }
-
-
-      unlockAudio();
-
-
-      if (
-        game.paused
-      ) {
-        return;
-      }
-
-
-      const p =
-        game.pointer;
-
-
-      p.active =
-        true;
-
-      p.id =
-        event.pointerId;
-
-      p.startX =
-        event.clientX;
-
-      p.startY =
-        event.clientY;
-
-      p.lastX =
-        event.clientX;
-
-      p.lastY =
-        event.clientY;
-
-      p.startTime =
-        performance.now();
-
-      p.moved =
-        false;
-
-      p.longPressTriggered =
-        false;
-
-
-      try {
-
-        canvas.setPointerCapture(
-          event.pointerId
-        );
-
-      } catch {}
-
-
-      clearTimeout(
-        p.longPressTimer
-      );
-
-
-      /*
-       * Long press = soft drop.
-       */
-
-      p.longPressTimer =
-        setTimeout(
-          () => {
-
-            if (
-              !p.active ||
-              p.moved
-            ) {
-              return;
-            }
-
-            p.longPressTriggered =
-              true;
-
-            game.softDropping =
-              true;
-
-          },
-          360
-        );
-
-
-      event.preventDefault();
-
-    },
-    {
-      passive: false
-    }
-  );
-
-
-  canvas.addEventListener(
-    "pointermove",
-    event => {
-
-      const p =
-        game.pointer;
-
-
-      if (
-        !p.active ||
-        p.id !==
-        event.pointerId
-      ) {
-        return;
-      }
-
-
-      const dx =
-        event.clientX -
-        p.startX;
-
-      const dy =
-        event.clientY -
-        p.startY;
-
-
-      p.lastX =
-        event.clientX;
-
-      p.lastY =
-        event.clientY;
-
-
-      const distance =
-        Math.hypot(
-          dx,
-          dy
-        );
-
-
-      if (
-        distance > 10
-      ) {
-
-        p.moved =
-          true;
-
-      }
-
-
-      /*
-       * Once the finger has moved,
-       * cancel long press.
-       */
-
-      if (
-        p.moved
-      ) {
-
-        clearTimeout(
-          p.longPressTimer
-        );
-
-      }
-
-
-      /*
-       * Horizontal dragging.
-       *
-       * Every ~28px moves one cell.
-       */
-
-      if (
-        Math.abs(dx) >
-        Math.abs(dy) &&
-        Math.abs(dx) >= 28
-      ) {
-
-        const steps =
-          Math.floor(
-            Math.abs(dx) /
-            28
-          );
-
-
-        const direction =
-          dx > 0
-            ? 1
-            : -1;
-
-
-        for (
-          let i = 0;
-          i < steps;
-          i++
-        ) {
-
-          moveHorizontal(
-            direction
-          );
-
-        }
-
-
-        p.startX =
-          event.clientX;
-
-      }
-
-
-      /*
-       * Vertical dragging.
-       */
-
-      if (
-        Math.abs(dy) >
-        Math.abs(dx) &&
-        Math.abs(dy) >= 32
-      ) {
-
-        /*
-         * Down = hard drop.
-         */
-
-        if (
-          dy > 0
-        ) {
-
-          hardDrop();
-
-        /*
-         * Up = hold.
-         */
-
-        } else {
-
-          holdPiece();
-
-        }
-
-
-        p.startX =
-          event.clientX;
-
-        p.startY =
-          event.clientY;
-
-        p.moved =
-          true;
-
-      }
-
-
-      event.preventDefault();
-
-    },
-    {
-      passive: false
-    }
-  );
-
-
-  const finishPointer =
-    event => {
-
-      const p =
-        game.pointer;
-
-
-      if (
-        !p.active ||
-        p.id !==
-        event.pointerId
-      ) {
-        return;
-      }
-
-
-      clearTimeout(
-        p.longPressTimer
-      );
-
-
-      const dx =
-        event.clientX -
-        p.startX;
-
-      const dy =
-        event.clientY -
-        p.startY;
-
-
-      const totalDx =
-        event.clientX -
-        p.startX;
-
-      const totalDy =
-        event.clientY -
-        p.startY;
-
-
-      game.softDropping =
-        false;
-
-
-      /*
-       * A clean tap rotates.
-       *
-       * Only if no gesture happened.
-       */
-
-      if (
-        !p.moved &&
-        !p.longPressTriggered
-      ) {
-
-        rotate(
-          1
-        );
-
-      }
-
-
-      p.active =
-        false;
-
-      p.id =
-        null;
-
-
-      try {
-
-        canvas.releasePointerCapture(
-          event.pointerId
-        );
-
-      } catch {}
-
-
-      event.preventDefault();
-
-    };
-
-
-  canvas.addEventListener(
-    "pointerup",
-    finishPointer,
-    {
-      passive: false
-    }
-  );
-
-
-  canvas.addEventListener(
-    "pointercancel",
-    finishPointer,
-    {
-      passive: false
     }
   );
 
@@ -3527,12 +3105,14 @@ function setupKeyboard() {
     event => {
 
       if (
-        currentScreen !==
-        "game"
+        currentScreen !== "game"
       ) {
+
         return;
+
       }
 
+      unlockAudio();
 
       if (
         matches(
@@ -3549,13 +3129,13 @@ function setupKeyboard() {
 
       }
 
-
       if (
         game.paused
       ) {
-        return;
-      }
 
+        return;
+
+      }
 
       if (
         matches(
@@ -3566,12 +3146,11 @@ function setupKeyboard() {
 
         event.preventDefault();
 
-        moveLeft();
+        moveHorizontal(-1);
 
         return;
 
       }
-
 
       if (
         matches(
@@ -3582,12 +3161,11 @@ function setupKeyboard() {
 
         event.preventDefault();
 
-        moveRight();
+        moveHorizontal(1);
 
         return;
 
       }
-
 
       if (
         matches(
@@ -3601,12 +3179,11 @@ function setupKeyboard() {
         game.softDropping =
           true;
 
-        softDropStep();
+        softDrop();
 
         return;
 
       }
-
 
       if (
         matches(
@@ -3617,14 +3194,11 @@ function setupKeyboard() {
 
         event.preventDefault();
 
-        rotate(
-          1
-        );
+        rotate(1);
 
         return;
 
       }
-
 
       if (
         matches(
@@ -3635,14 +3209,11 @@ function setupKeyboard() {
 
         event.preventDefault();
 
-        rotate(
-          -1
-        );
+        rotate(-1);
 
         return;
 
       }
-
 
       if (
         matches(
@@ -3658,7 +3229,6 @@ function setupKeyboard() {
         return;
 
       }
-
 
       if (
         matches(
@@ -3700,10 +3270,787 @@ function setupKeyboard() {
 
 
 /* =========================================================
+   TOUCH SYSTEM
+========================================================= */
+
+/*
+ * Mobile controls:
+ *
+ * TAP
+ *   -> rotate clockwise
+ *
+ * SWIPE LEFT
+ *   -> move left
+ *
+ * SWIPE RIGHT
+ *   -> move right
+ *
+ * FAST SWIPE DOWN
+ *   -> hard drop
+ *
+ * SLOW DOWNWARD DRAG
+ *   -> soft drop
+ *
+ * LONG PRESS
+ *   -> hold piece
+ *
+ * Important:
+ * Long press has its own state.
+ * Once triggered, pointer movement can never
+ * trigger another action from the same gesture.
+ */
+
+const TOUCH = {
+
+  TAP_MAX_DISTANCE: 18,
+
+  TAP_MAX_TIME: 300,
+
+  LONG_PRESS_TIME: 520,
+
+  SWIPE_DISTANCE: 30,
+
+  HARD_DROP_DISTANCE: 105,
+
+  HARD_DROP_TIME: 360,
+
+  MOVE_REPEAT_DELAY: 150,
+
+  MOVE_REPEAT_RATE: 45,
+
+  SOFT_DROP_RATE: 70
+
+};
+
+
+function setupTouchControls() {
+
+  if (
+    !canvas
+  ) {
+
+    return;
+
+  }
+
+  /*
+   * Critical for iOS Safari.
+   * Without this, the browser may interpret
+   * the gesture as page scrolling/zooming.
+   */
+
+  canvas.style.touchAction =
+    "none";
+
+  canvas.style.userSelect =
+    "none";
+
+  canvas.style.webkitUserSelect =
+    "none";
+
+  canvas.style.webkitTouchCallout =
+    "none";
+
+
+  canvas.addEventListener(
+    "pointerdown",
+    onPointerDown,
+    {
+      passive: false
+    }
+  );
+
+
+  canvas.addEventListener(
+    "pointermove",
+    onPointerMove,
+    {
+      passive: false
+    }
+  );
+
+
+  canvas.addEventListener(
+    "pointerup",
+    onPointerUp,
+    {
+      passive: false
+    }
+  );
+
+
+  canvas.addEventListener(
+    "pointercancel",
+    onPointerCancel,
+    {
+      passive: false
+    }
+  );
+
+
+  canvas.addEventListener(
+    "lostpointercapture",
+    onPointerCancel,
+    {
+      passive: false
+    }
+  );
+
+}
+
+
+function onPointerDown(
+  event
+) {
+
+  if (
+    event.pointerType === "mouse" &&
+    event.button !== 0
+  ) {
+
+    return;
+
+  }
+
+  /*
+   * Never allow two fingers to control
+   * the same falling piece.
+   */
+
+  if (
+    game.touch.active
+  ) {
+
+    return;
+
+  }
+
+  if (
+    currentScreen !== "game" ||
+    !canPlay()
+  ) {
+
+    return;
+
+  }
+
+  event.preventDefault();
+
+  unlockAudio();
+
+  game.touch.active =
+    true;
+
+  game.touch.id =
+    event.pointerId;
+
+  game.touch.startX =
+    event.clientX;
+
+  game.touch.startY =
+    event.clientY;
+
+  game.touch.lastX =
+    event.clientX;
+
+  game.touch.lastY =
+    event.clientY;
+
+  game.touch.startTime =
+    performance.now();
+
+  game.touch.moved =
+    false;
+
+  game.touch.actionStarted =
+    false;
+
+  game.touch.longPressTriggered =
+    false;
+
+
+  try {
+
+    canvas.setPointerCapture(
+      event.pointerId
+    );
+
+  } catch {}
+
+
+  /*
+   * Long press is HOLD.
+   *
+   * This timer runs only once.
+   * It is cancelled immediately when
+   * the finger moves.
+   */
+
+  game.touch.longPressTimer =
+    window.setTimeout(
+      () => {
+
+        if (
+          !game.touch.active ||
+          game.touch.moved ||
+          !canPlay()
+        ) {
+
+          return;
+
+        }
+
+        game.touch.longPressTriggered =
+          true;
+
+        game.touch.actionStarted =
+          true;
+
+        holdPiece();
+
+      },
+      TOUCH.LONG_PRESS_TIME
+    );
+
+}
+
+
+function onPointerMove(
+  event
+) {
+
+  if (
+    !game.touch.active ||
+    event.pointerId !==
+    game.touch.id
+  ) {
+
+    return;
+
+  }
+
+  event.preventDefault();
+
+  if (
+    !canPlay()
+  ) {
+
+    cleanupTouch();
+
+    return;
+
+  }
+
+  const x =
+    event.clientX;
+
+  const y =
+    event.clientY;
+
+  const totalDX =
+    x -
+    game.touch.startX;
+
+  const totalDY =
+    y -
+    game.touch.startY;
+
+  const stepDX =
+    x -
+    game.touch.lastX;
+
+  const stepDY =
+    y -
+    game.touch.lastY;
+
+  const absX =
+    Math.abs(
+      totalDX
+    );
+
+  const absY =
+    Math.abs(
+      totalDY
+    );
+
+
+  /*
+   * Once the finger moves enough,
+   * it is definitely NOT a long press.
+   */
+
+  if (
+    absX >
+      TOUCH.TAP_MAX_DISTANCE ||
+    absY >
+      TOUCH.TAP_MAX_DISTANCE
+  ) {
+
+    game.touch.moved =
+      true;
+
+    clearTimeout(
+      game.touch.longPressTimer
+    );
+
+    game.touch.longPressTimer =
+      null;
+
+  }
+
+
+  /*
+   * A long press already became HOLD.
+   *
+   * Absolutely no other gesture is allowed
+   * to fire from this pointer session.
+   */
+
+  if (
+    game.touch.longPressTriggered
+  ) {
+
+    game.touch.lastX =
+      x;
+
+    game.touch.lastY =
+      y;
+
+    return;
+
+  }
+
+
+  /*
+   * Horizontal movement.
+   *
+   * Every threshold crossed moves exactly one cell.
+   * This prevents a single pointermove event from
+   * generating dozens of moves.
+   */
+
+  if (
+    absX >
+      TOUCH.SWIPE_DISTANCE &&
+    absX >
+      absY
+  ) {
+
+    clearTimeout(
+      game.touch.longPressTimer
+    );
+
+    game.touch.longPressTimer =
+      null;
+
+    game.touch.actionStarted =
+      true;
+
+    const direction =
+      totalDX > 0
+        ? 1
+        : -1;
+
+    /*
+     * Move immediately once.
+     */
+
+    moveHorizontal(
+      direction
+    );
+
+    /*
+     * After the first movement,
+     * use controlled DAS-like repeat.
+     */
+
+    if (
+      !game.touch.repeatTimer
+    ) {
+
+      game.touch.repeatTimer =
+        window.setTimeout(
+          () => {
+
+            if (
+              !game.touch.active ||
+              !canPlay() ||
+              game.touch.longPressTriggered
+            ) {
+
+              return;
+
+            }
+
+            game.touch.repeatTimer =
+              window.setInterval(
+                () => {
+
+                  if (
+                    !game.touch.active ||
+                    !canPlay() ||
+                    game.touch.longPressTriggered
+                  ) {
+
+                    return;
+
+                  }
+
+                  const dx =
+                    game.touch.lastX -
+                    game.touch.startX;
+
+                  moveHorizontal(
+                    dx > 0
+                      ? 1
+                      : -1
+                  );
+
+                },
+                TOUCH.MOVE_REPEAT_RATE
+              );
+
+          },
+          TOUCH.MOVE_REPEAT_DELAY
+        );
+
+    }
+
+  }
+
+
+  /*
+   * Downward movement.
+   */
+
+  if (
+    absY >
+      TOUCH.SWIPE_DISTANCE &&
+    absY >
+      absX &&
+    totalDY > 0
+  ) {
+
+    clearTimeout(
+      game.touch.longPressTimer
+    );
+
+    game.touch.longPressTimer =
+      null;
+
+    game.touch.actionStarted =
+      true;
+
+    /*
+     * Fast downward swipe.
+     *
+     * It locks exactly ONCE.
+     */
+
+    const elapsed =
+      Math.max(
+        1,
+        performance.now() -
+        game.touch.startTime
+      );
+
+    const velocity =
+      absY /
+      elapsed;
+
+    const hardDrop =
+      absY >=
+        TOUCH.HARD_DROP_DISTANCE ||
+      (
+        absY >= 70 &&
+        elapsed <=
+          TOUCH.HARD_DROP_TIME
+      );
+
+    if (
+      hardDrop
+    ) {
+
+      hardDropOnce();
+
+      return;
+
+    }
+
+
+    /*
+     * Slow drag:
+     * controlled soft drop.
+     */
+
+    if (
+      Math.abs(stepDY) >= 8
+    ) {
+
+      softDrop();
+
+    }
+
+  }
+
+
+  game.touch.lastX =
+    x;
+
+  game.touch.lastY =
+    y;
+
+}
+
+
+function onPointerUp(
+  event
+) {
+
+  if (
+    !game.touch.active ||
+    event.pointerId !==
+    game.touch.id
+  ) {
+
+    return;
+
+  }
+
+  event.preventDefault();
+
+  const dx =
+    event.clientX -
+    game.touch.startX;
+
+  const dy =
+    event.clientY -
+    game.touch.startY;
+
+  const distance =
+    Math.hypot(
+      dx,
+      dy
+    );
+
+  const elapsed =
+    performance.now() -
+    game.touch.startTime;
+
+
+  /*
+   * If Hold was triggered,
+   * this pointer session is DONE.
+   *
+   * This is the key fix for your
+   * "long press creates many blocks" bug.
+   */
+
+  if (
+    game.touch.longPressTriggered
+  ) {
+
+    cleanupTouch();
+
+    return;
+
+  }
+
+
+  /*
+   * If hard drop already happened
+   * during pointermove, don't do anything again.
+   */
+
+  if (
+    game.touch.actionStarted &&
+    distance >
+      TOUCH.SWIPE_DISTANCE
+  ) {
+
+    cleanupTouch();
+
+    return;
+
+  }
+
+
+  /*
+   * Tap = clockwise rotate.
+   */
+
+  if (
+    distance <=
+      TOUCH.TAP_MAX_DISTANCE &&
+    elapsed <=
+      TOUCH.TAP_MAX_TIME &&
+    canPlay()
+  ) {
+
+    rotate(1);
+
+  }
+
+
+  cleanupTouch();
+
+}
+
+
+function onPointerCancel(
+  event
+) {
+
+  if (
+    event.pointerId ===
+    game.touch.id
+  ) {
+
+    cleanupTouch();
+
+  }
+
+}
+
+
+/*
+ * Hard drop is deliberately isolated.
+ *
+ * There is NO interval.
+ * There is NO repeat.
+ * There is NO setTimeout.
+ *
+ * One gesture = one hard drop.
+ */
+
+function hardDropOnce() {
+
+  if (
+    !game.touch.active ||
+    game.touch.longPressTriggered ||
+    !canPlay()
+  ) {
+
+    return;
+
+  }
+
+  game.touch.actionStarted =
+    true;
+
+  game.touch.longPressTriggered =
+    true;
+
+  clearTimeout(
+    game.touch.longPressTimer
+  );
+
+  game.touch.longPressTimer =
+    null;
+
+  stopTouchRepeat();
+
+  hardDrop();
+
+  cleanupTouch();
+
+}
+
+
+/*
+ * Kill every touch-related timer.
+ */
+
+function cleanupTouch() {
+
+  clearTimeout(
+    game.touch.longPressTimer
+  );
+
+  game.touch.longPressTimer =
+    null;
+
+  stopTouchRepeat();
+
+  clearInterval(
+    game.touch.softDropTimer
+  );
+
+  game.touch.softDropTimer =
+    null;
+
+  game.touch.active =
+    false;
+
+  game.touch.id =
+    null;
+
+  game.touch.startX =
+    0;
+
+  game.touch.startY =
+    0;
+
+  game.touch.lastX =
+    0;
+
+  game.touch.lastY =
+    0;
+
+  game.touch.startTime =
+    0;
+
+  game.touch.moved =
+    false;
+
+  game.touch.actionStarted =
+    false;
+
+  game.touch.longPressTriggered =
+    false;
+
+}
+
+
+function stopTouchRepeat() {
+
+  clearTimeout(
+    game.touch.repeatTimer
+  );
+
+  clearInterval(
+    game.touch.repeatTimer
+  );
+
+  game.touch.repeatTimer =
+    null;
+
+}
+
+
+/* =========================================================
+   CANVAS FOCUS
+========================================================= */
+
+function focusGameCanvas() {
+
+  try {
+
+    canvas?.focus({
+      preventScroll:
+        true
+    });
+
+  } catch {}
+
+}
+
+
+/* =========================================================
    SETTINGS EVENTS
 ========================================================= */
 
-function setupSettings() {
+function setupSettingsEvents() {
 
   el.sound?.addEventListener(
     "change",
@@ -3735,13 +4082,17 @@ function setupSettings() {
         el.music.checked
       );
 
+      window.KasaneAudio
+        ?.setMusicEnabled
+        ?.(
+          el.music.checked
+        );
 
       window.GomokuAudio
         ?.setMusicEnabled
         ?.(
           el.music.checked
         );
-
 
       if (
         el.music.checked
@@ -3814,7 +4165,7 @@ function setupSettings() {
 
 
 /* =========================================================
-   NAVIGATION
+   NAVIGATION EVENTS
 ========================================================= */
 
 function setupNavigation() {
@@ -3822,8 +4173,6 @@ function setupNavigation() {
   el.start?.addEventListener(
     "click",
     () => {
-
-      unlockAudio();
 
       showScreen(
         "setup"
@@ -3905,7 +4254,11 @@ function setupNavigation() {
     "click",
     () => {
 
-      goHome();
+      cleanupTouch();
+
+      showScreen(
+        "home"
+      );
 
     }
   );
@@ -3915,14 +4268,7 @@ function setupNavigation() {
     "click",
     () => {
 
-      if (
-        currentScreen ===
-        "game"
-      ) {
-
-        pauseGame();
-
-      }
+      cleanupTouch();
 
       showScreen(
         "home"
@@ -3937,8 +4283,7 @@ function setupNavigation() {
     () => {
 
       if (
-        currentScreen ===
-        "game"
+        currentScreen === "game"
       ) {
 
         pauseGame();
@@ -3964,12 +4309,11 @@ function setupNavigation() {
       );
 
       showToast(
-        language === "zh-TW"
-          ? "紀錄已清除"
-          : "Records cleared"
+        "紀錄已清除"
       );
 
       renderRecords();
+
       updateHome();
 
     }
@@ -3979,99 +4323,28 @@ function setupNavigation() {
 
 
 /* =========================================================
-   VISIBILITY
+   HAPTICS
 ========================================================= */
-
-document.addEventListener(
-  "visibilitychange",
-  () => {
-
-    if (
-      document.hidden &&
-      game.running &&
-      !game.paused &&
-      !game.over
-    ) {
-
-      pauseGame();
-
-    }
-
-  }
-);
-
-
-/* =========================================================
-   RESIZE
-========================================================= */
-
-window.addEventListener(
-  "resize",
-  () => {
-
-    if (
-      currentScreen ===
-      "game"
-    ) {
-
-      resizeCanvas();
-      draw();
-
-    }
-
-  }
-);
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function matches(
-  keys,
-  value
-) {
-
-  return (
-    Array.isArray(keys) &&
-    keys.includes(
-      value
-    )
-  );
-
-}
-
-
-function focusCanvas() {
-
-  try {
-
-    canvas?.focus({
-      preventScroll:
-        true
-    });
-
-  } catch {}
-
-}
-
 
 function vibrate(
   duration
 ) {
 
   if (
-    data.settings.haptic ===
-    false
+    data.settings.haptic === false
   ) {
+
     return;
+
   }
 
   if (
     typeof navigator.vibrate !==
     "function"
   ) {
+
     return;
+
   }
 
   try {
@@ -4085,12 +4358,20 @@ function vibrate(
 }
 
 
+/* =========================================================
+   TOAST
+========================================================= */
+
 function showToast(
   message
 ) {
 
-  if (!el.toast) {
+  if (
+    !el.toast
+  ) {
+
     return;
+
   }
 
   el.toast.textContent =
@@ -4105,7 +4386,7 @@ function showToast(
   );
 
   toastTimer =
-    setTimeout(
+    window.setTimeout(
       () => {
 
         el.toast.classList.remove(
@@ -4115,6 +4396,23 @@ function showToast(
       },
       1300
     );
+
+}
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function matches(
+  keys,
+  value
+) {
+
+  return (
+    Array.isArray(keys) &&
+    keys.includes(value)
+  );
 
 }
 
@@ -4185,11 +4483,11 @@ function lighten(
 ) {
 
   const value =
-    hex.replace(
-      "#",
-      ""
-    );
-
+    String(hex)
+      .replace(
+        "#",
+        ""
+      );
 
   const r =
     parseInt(
@@ -4209,18 +4507,37 @@ function lighten(
       16
     );
 
+  const nr =
+    Math.min(
+      255,
+      Math.round(
+        r +
+        (255 - r) *
+        amount
+      )
+    );
 
-  return `rgb(
-    ${Math.round(
-      r + (255 - r) * amount
-    )},
-    ${Math.round(
-      g + (255 - g) * amount
-    )},
-    ${Math.round(
-      b + (255 - b) * amount
-    )}
-  )`;
+  const ng =
+    Math.min(
+      255,
+      Math.round(
+        g +
+        (255 - g) *
+        amount
+      )
+    );
+
+  const nb =
+    Math.min(
+      255,
+      Math.round(
+        b +
+        (255 - b) *
+        amount
+      )
+    );
+
+  return `rgb(${nr}, ${ng}, ${nb})`;
 
 }
 
@@ -4229,7 +4546,9 @@ function escapeHTML(
   value
 ) {
 
-  return String(value)
+  return String(
+    value
+  )
     .replaceAll(
       "&",
       "&amp;"
@@ -4255,23 +4574,73 @@ function escapeHTML(
 
 
 /* =========================================================
-   REMOVE OLD MOBILE BUTTONS
+   RESIZE
 ========================================================= */
 
-function removeLegacyControls() {
+window.addEventListener(
+  "resize",
+  () => {
 
-  const controls =
-    document.querySelector(
-      ".mobile-controls"
-    );
+    if (
+      currentScreen ===
+      "game"
+    ) {
 
-  if (controls) {
+      resizeCanvas();
 
-    controls.remove();
+      draw();
+
+    }
 
   }
+);
 
-}
+
+/* =========================================================
+   VISIBILITY
+========================================================= */
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+
+    if (
+      document.hidden &&
+      game.running &&
+      !game.paused &&
+      !game.over
+    ) {
+
+      pauseGame();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   PAGE SAFETY
+========================================================= */
+
+window.addEventListener(
+  "blur",
+  () => {
+
+    cleanupTouch();
+
+  }
+);
+
+
+window.addEventListener(
+  "pagehide",
+  () => {
+
+    cleanupTouch();
+
+  }
+);
 
 
 /* =========================================================
@@ -4280,20 +4649,11 @@ function removeLegacyControls() {
 
 function init() {
 
-  /*
-   * Remove the old arrow-button UI
-   * even if index.html still contains it.
-   */
+  initializeSettings();
 
-  removeLegacyControls();
+  applyI18n();
 
-  applyTheme();
-
-  syncSettings();
-
-  applyI18N();
-
-  setupModes();
+  setupModeSelection();
 
   setupNavigation();
 
@@ -4301,7 +4661,7 @@ function init() {
 
   setupTouchControls();
 
-  setupSettings();
+  setupSettingsEvents();
 
   updateHome();
 
@@ -4310,6 +4670,19 @@ function init() {
   resizeCanvas();
 
   draw();
+
+}
+
+
+/*
+ * initializeSettings
+ */
+
+function initializeSettings() {
+
+  syncSettings();
+
+  applyTheme();
 
 }
 
