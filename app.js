@@ -1,5 +1,34 @@
 "use strict";
 
+/*
+ * =========================================================
+ * KASANE TETRIS
+ * =========================================================
+ *
+ * Main game controller
+ *
+ * - Responsive canvas rendering
+ * - Independent gravity timer
+ * - 7-bag randomizer
+ * - Hold
+ * - Next queue
+ * - Ghost piece
+ * - SRS rotation
+ * - DAS / ARR touch movement
+ * - Keyboard controls
+ * - Soft drop
+ * - Hard drop
+ * - Lock delay
+ * - T-Spin
+ * - Combo
+ * - Back-to-Back
+ * - Perfect Clear
+ * - Marathon / Sprint / Ultra / Zen
+ * - UISFX / BGM integration
+ *
+ * =========================================================
+ */
+
 import {
   CONFIG,
   COLORS,
@@ -47,101 +76,214 @@ import {
 } from "./audio.js";
 
 
-/* =========================================================
+/*
+ * =========================================================
  * DATA
- * ========================================================= */
+ * =========================================================
+ */
 
 const data = loadData();
 
 window.KasaneData = data;
 
 window.KasaneSaveSettings = settings => {
+
   data.settings = {
     ...data.settings,
     ...settings
   };
 
   saveData(data);
+
 };
 
 
-/* =========================================================
- * DOM
- * ========================================================= */
+/*
+ * =========================================================
+ * DOM HELPERS
+ * =========================================================
+ */
 
 const $ = selector =>
   document.querySelector(selector);
 
 const $$ = selector =>
-  Array.from(document.querySelectorAll(selector));
+  Array.from(
+    document.querySelectorAll(selector)
+  );
 
+
+/*
+ * =========================================================
+ * SCREENS
+ * =========================================================
+ */
 
 const screens = {
-  home: $("#homeScreen"),
-  setup: $("#setupScreen"),
-  game: $("#gameScreen"),
-  result: $("#resultScreen"),
-  records: $("#recordsScreen"),
-  settings: $("#settingsScreen")
+
+  home:
+    $("#homeScreen"),
+
+  setup:
+    $("#setupScreen"),
+
+  game:
+    $("#gameScreen"),
+
+  result:
+    $("#resultScreen"),
+
+  records:
+    $("#recordsScreen"),
+
+  settings:
+    $("#settingsScreen")
+
 };
 
+
+/*
+ * =========================================================
+ * ELEMENTS
+ * =========================================================
+ */
 
 const elements = {
-  backButton: $("#backButton"),
-  menuButton: $("#menuButton"),
-  startButton: $("#startButton"),
-  recordsButton: $("#recordsButton"),
-  settingsButton: $("#settingsButton"),
-  beginButton: $("#beginButton"),
 
-  gameCanvas: $("#gameCanvas"),
-  holdCanvas: $("#holdCanvas"),
+  backButton:
+    $("#backButton"),
 
-  pauseButton: $("#pauseButton"),
-  resumeButton: $("#resumeButton"),
-  pauseOverlay: $("#pauseOverlay"),
+  menuButton:
+    $("#menuButton"),
 
-  againButton: $("#againButton"),
-  homeButton: $("#homeButton"),
-  clearRecordsButton: $("#clearRecordsButton"),
+  startButton:
+    $("#startButton"),
 
-  soundToggle: $("#soundToggle"),
-  musicToggle: $("#musicToggle"),
-  ghostToggle: $("#ghostToggle"),
-  hapticToggle: $("#hapticToggle"),
-  motionToggle: $("#motionToggle"),
-  themeSelect: $("#themeSelect"),
+  recordsButton:
+    $("#recordsButton"),
 
-  modeLabel: $("#modeLabel"),
-  levelLabel: $("#levelLabel"),
-  scoreLabel: $("#scoreLabel"),
-  linesLabel: $("#linesLabel"),
-  comboLabel: $("#comboLabel"),
-  b2bLabel: $("#b2bLabel"),
+  settingsButton:
+    $("#settingsButton"),
 
-  scoreLabelMobile: $("#scoreLabelMobile"),
-  linesLabelMobile: $("#linesLabelMobile"),
+  beginButton:
+    $("#beginButton"),
 
-  homeBestScore: $("#homeBestScore"),
+  gameCanvas:
+    $("#gameCanvas"),
 
-  gamesStat: $("#gamesStat"),
-  bestStat: $("#bestStat"),
-  linesStat: $("#linesStat"),
-  sprintStat: $("#sprintStat"),
+  holdCanvas:
+    $("#holdCanvas"),
 
-  recordList: $("#recordList"),
+  pauseButton:
+    $("#pauseButton"),
 
-  resultMarkText: $("#resultMarkText"),
-  resultKicker: $("#resultKicker"),
-  resultTitle: $("#resultTitle"),
-  resultDescription: $("#resultDescription"),
-  resultScore: $("#resultScore"),
-  resultLines: $("#resultLines"),
-  resultLevel: $("#resultLevel"),
+  resumeButton:
+    $("#resumeButton"),
 
-  toast: $("#toast")
+  pauseOverlay:
+    $("#pauseOverlay"),
+
+  againButton:
+    $("#againButton"),
+
+  homeButton:
+    $("#homeButton"),
+
+  clearRecordsButton:
+    $("#clearRecordsButton"),
+
+  soundToggle:
+    $("#soundToggle"),
+
+  musicToggle:
+    $("#musicToggle"),
+
+  ghostToggle:
+    $("#ghostToggle"),
+
+  hapticToggle:
+    $("#hapticToggle"),
+
+  motionToggle:
+    $("#motionToggle"),
+
+  themeSelect:
+    $("#themeSelect"),
+
+  modeLabel:
+    $("#modeLabel"),
+
+  levelLabel:
+    $("#levelLabel"),
+
+  scoreLabel:
+    $("#scoreLabel"),
+
+  linesLabel:
+    $("#linesLabel"),
+
+  comboLabel:
+    $("#comboLabel"),
+
+  b2bLabel:
+    $("#b2bLabel"),
+
+  scoreLabelMobile:
+    $("#scoreLabelMobile"),
+
+  linesLabelMobile:
+    $("#linesLabelMobile"),
+
+  homeBestScore:
+    $("#homeBestScore"),
+
+  gamesStat:
+    $("#gamesStat"),
+
+  bestStat:
+    $("#bestStat"),
+
+  linesStat:
+    $("#linesStat"),
+
+  sprintStat:
+    $("#sprintStat"),
+
+  recordList:
+    $("#recordList"),
+
+  resultMarkText:
+    $("#resultMarkText"),
+
+  resultKicker:
+    $("#resultKicker"),
+
+  resultTitle:
+    $("#resultTitle"),
+
+  resultDescription:
+    $("#resultDescription"),
+
+  resultScore:
+    $("#resultScore"),
+
+  resultLines:
+    $("#resultLines"),
+
+  resultLevel:
+    $("#resultLevel"),
+
+  toast:
+    $("#toast")
+
 };
 
+
+/*
+ * =========================================================
+ * CANVAS
+ * =========================================================
+ */
 
 const canvas =
   elements.gameCanvas;
@@ -159,126 +301,241 @@ const nextCanvases =
   $$(".next-list canvas");
 
 
-/* =========================================================
- * GAME
- * ========================================================= */
+/*
+ * =========================================================
+ * GAME STATE
+ * =========================================================
+ */
 
 const game = {
 
-  running: false,
-  paused: false,
-  over: false,
+  running:
+    false,
 
-  mode: "marathon",
-  modeConfig: getMode("marathon"),
+  paused:
+    false,
 
-  board: createBoard(),
-  randomizer: createRandomizer(),
+  over:
+    false,
 
-  current: null,
-  next: [],
-  hold: null,
-  holdUsed: false,
+  mode:
+    "marathon",
 
-  score: 0,
-  lines: 0,
-  level: 1,
+  modeConfig:
+    getMode("marathon"),
 
-  combo: -1,
-  b2b: false,
+  board:
+    createBoard(),
 
-  lastActionWasRotation: false,
+  randomizer:
+    createRandomizer(),
 
-  lockStartedAt: null,
-  accumulator: 0,
-  lastTime: 0,
-  startTime: 0,
+  current:
+    null,
 
-  dropInterval: 900,
+  next:
+    [],
 
-  softDropping: false,
+  hold:
+    null,
 
-  animationFrame: null,
+  holdUsed:
+    false,
 
-  touchRepeat: null,
-  touchAction: null,
+  score:
+    0,
 
-  gesture: {
-    active: false,
-    pointerId: null,
-    startX: 0,
-    startY: 0,
-    lastX: 0,
-    lastY: 0,
-    startTime: 0,
-    moved: false
-  }
+  lines:
+    0,
+
+  level:
+    1,
+
+  combo:
+    -1,
+
+  b2b:
+    false,
+
+  lastActionWasRotation:
+    false,
+
+  lastClearWasSpecial:
+    false,
+
+  /*
+   * Independent timers.
+   */
+
+  gravityTimer:
+    0,
+
+  lockTimer:
+    0,
+
+  grounded:
+    false,
+
+  lockResets:
+    0,
+
+  /*
+   * Frame timing.
+   */
+
+  lastTime:
+    0,
+
+  startTime:
+    0,
+
+  /*
+   * Ultra.
+   */
+
+  ultraEndTime:
+    null,
+
+  ultraRemaining:
+    120,
+
+  /*
+   * Drop state.
+   */
+
+  softDropping:
+    false,
+
+  /*
+   * Animation.
+   */
+
+  animationFrame:
+    null,
+
+  /*
+   * Touch repeat.
+   */
+
+  touchRepeat:
+    null,
+
+  touchAction:
+    null,
+
+  /*
+   * Keyboard repeat state.
+   */
+
+  heldKeys:
+    new Set(),
+
+  /*
+   * Prevent accidental double-start.
+   */
+
+  startLock:
+    false
 
 };
 
 
-let currentScreen = "home";
-let selectedMode = "marathon";
-let toastTimer = null;
+/*
+ * =========================================================
+ * SCREEN STATE
+ * =========================================================
+ */
+
+let currentScreen =
+  "home";
+
+let selectedMode =
+  "marathon";
 
 
-/* =========================================================
+/*
+ * =========================================================
  * SETTINGS
- * ========================================================= */
+ * =========================================================
+ */
 
 function syncSettings() {
 
   if (elements.soundToggle) {
+
     elements.soundToggle.checked =
       data.settings.sound !== false;
+
   }
 
   if (elements.musicToggle) {
+
     elements.musicToggle.checked =
       data.settings.music !== false;
+
   }
 
   if (elements.ghostToggle) {
+
     elements.ghostToggle.checked =
       data.settings.ghost !== false;
+
   }
 
   if (elements.hapticToggle) {
+
     elements.hapticToggle.checked =
       data.settings.haptic !== false;
+
   }
 
   if (elements.motionToggle) {
+
     elements.motionToggle.checked =
       data.settings.motion !== false;
+
   }
 
   if (elements.themeSelect) {
+
     elements.themeSelect.value =
-      data.settings.theme || "system";
+      data.settings.theme ||
+      "system";
+
   }
 
 }
 
 
-function updateSetting(key, value) {
+function updateSetting(
+  key,
+  value
+) {
 
-  data.settings[key] = value;
+  data.settings[key] =
+    value;
 
   saveSettings(
     data,
     data.settings
   );
 
-  window.KasaneData = data;
+  window.KasaneData =
+    data;
 
 }
 
 
 function applyTheme() {
 
-  document.documentElement.dataset.theme =
-    data.settings.theme || "system";
+  const theme =
+    data.settings.theme ||
+    "system";
+
+  document.documentElement
+    .dataset
+    .theme =
+      theme;
 
 }
 
@@ -286,18 +543,23 @@ function applyTheme() {
 function initializeSettings() {
 
   syncSettings();
+
   applyTheme();
 
 }
 
 
-/* =========================================================
- * NAVIGATION
- * ========================================================= */
+/*
+ * =========================================================
+ * SCREEN NAVIGATION
+ * =========================================================
+ */
 
 function showScreen(name) {
 
-  Object.entries(screens).forEach(
+  Object.entries(
+    screens
+  ).forEach(
     ([key, screen]) => {
 
       if (!screen) {
@@ -312,25 +574,33 @@ function showScreen(name) {
     }
   );
 
-  currentScreen = name;
+  currentScreen =
+    name;
 
   if (name === "home") {
+
     updateHome();
+
   }
 
   if (name === "records") {
+
     renderRecords();
+
   }
 
   if (name === "settings") {
+
     syncSettings();
+
   }
 
   if (name === "game") {
-    requestAnimationFrame(() => {
-      resizeCanvas();
-      draw();
-    });
+
+    resizeCanvas();
+
+    draw();
+
   }
 
 }
@@ -342,7 +612,9 @@ function goHome() {
     game.running &&
     !game.over
   ) {
+
     pauseGame();
+
   }
 
   showScreen("home");
@@ -350,44 +622,59 @@ function goHome() {
 }
 
 
-/* =========================================================
- * MODE
- * ========================================================= */
+/*
+ * =========================================================
+ * MODE SELECTION
+ * =========================================================
+ */
 
 function setupModeSelection() {
 
-  $$(".mode-card").forEach(
-    button => {
+  $$(".mode-card")
+    .forEach(button => {
 
       button.addEventListener(
         "click",
         () => {
 
-          $$(".mode-card").forEach(
-            item =>
-              item.classList.remove("selected")
-          );
+          $$(".mode-card")
+            .forEach(item => {
 
-          button.classList.add("selected");
+              item.classList.remove(
+                "selected"
+              );
+
+            });
+
+          button.classList.add(
+            "selected"
+          );
 
           selectedMode =
             button.dataset.mode ||
             "marathon";
 
-          playSFX(SFX.move);
+          playSFX(
+            SFX.move,
+            {
+              cooldownMs:
+                80
+            }
+          );
 
         }
       );
 
-    }
-  );
+    });
 
 }
 
 
-/* =========================================================
- * RANDOMIZER
- * ========================================================= */
+/*
+ * =========================================================
+ * QUEUE
+ * =========================================================
+ */
 
 function fillNextQueue() {
 
@@ -419,100 +706,312 @@ function takeNextPiece() {
 }
 
 
-/* =========================================================
- * START
- * ========================================================= */
+/*
+ * =========================================================
+ * SPAWN
+ * =========================================================
+ */
+
+function spawnPiece() {
+
+  game.current =
+    takeNextPiece();
+
+  game.holdUsed =
+    false;
+
+  game.gravityTimer =
+    0;
+
+  game.lockTimer =
+    0;
+
+  game.grounded =
+    false;
+
+  game.lockResets =
+    0;
+
+  game.lastActionWasRotation =
+    false;
+
+  /*
+   * Spawn immediately.
+   */
+
+  if (
+    collides(
+      game.board,
+      game.current
+    )
+  ) {
+
+    finishGame(false);
+
+    return false;
+
+  }
+
+  return true;
+
+}
+
+
+/*
+ * =========================================================
+ * START GAME
+ * =========================================================
+ */
 
 function startGame(
   modeId = selectedMode
 ) {
 
+  if (game.startLock) {
+    return;
+  }
+
+  game.startLock =
+    true;
+
+  setTimeout(
+    () => {
+
+      game.startLock =
+        false;
+
+    },
+    150
+  );
+
+
   unlockAudio();
 
-  game.running = true;
-  game.paused = false;
-  game.over = false;
+  /*
+   * Cancel old loop.
+   */
 
-  game.mode = modeId;
-  game.modeConfig = getMode(modeId);
+  if (
+    game.animationFrame !==
+    null
+  ) {
 
-  game.board = createBoard();
-  game.randomizer = createRandomizer();
+    cancelAnimationFrame(
+      game.animationFrame
+    );
 
-  game.next = [];
-  game.hold = null;
-  game.holdUsed = false;
+    game.animationFrame =
+      null;
 
-  game.score = 0;
-  game.lines = 0;
-  game.level = 1;
+  }
 
-  game.combo = -1;
-  game.b2b = false;
 
-  game.lastActionWasRotation = false;
+  /*
+   * Reset game.
+   */
 
-  game.lockStartedAt = null;
-  game.accumulator = 0;
+  game.running =
+    true;
 
-  game.lastTime = performance.now();
-  game.startTime = performance.now();
+  game.paused =
+    false;
 
-  game.softDropping = false;
+  game.over =
+    false;
 
-  game.modeConfig.duration =
-    Number(game.modeConfig.duration) || 120;
+  game.mode =
+    modeId;
+
+  game.modeConfig =
+    getMode(modeId);
+
+  game.board =
+    createBoard();
+
+  game.randomizer =
+    createRandomizer();
+
+  game.current =
+    null;
+
+  game.next =
+    [];
+
+  game.hold =
+    null;
+
+  game.holdUsed =
+    false;
+
+  game.score =
+    0;
+
+  game.lines =
+    0;
+
+  game.level =
+    1;
+
+  game.combo =
+    -1;
+
+  game.b2b =
+    false;
+
+  game.lastActionWasRotation =
+    false;
+
+  game.lastClearWasSpecial =
+    false;
+
+  game.gravityTimer =
+    0;
+
+  game.lockTimer =
+    0;
+
+  game.grounded =
+    false;
+
+  game.lockResets =
+    0;
+
+  game.softDropping =
+    false;
+
+  game.lastTime =
+    performance.now();
+
+  game.startTime =
+    performance.now();
+
+  game.ultraRemaining =
+    game.modeConfig.duration ||
+    120;
 
   game.ultraEndTime =
     game.modeConfig.timed
       ? performance.now() +
-        game.modeConfig.duration * 1000
+        game.modeConfig.duration *
+        1000
       : null;
+
 
   fillNextQueue();
 
-  game.current =
-    takeNextPiece();
+
+  if (!spawnPiece()) {
+
+    return;
+
+  }
+
 
   updateGravity();
+
   updateGameUI();
 
   showScreen("game");
 
-  resetGesture();
   focusGameCanvas();
 
-  playSFX(SFX.resume);
+  if (
+    elements.pauseOverlay
+  ) {
 
-  cancelAnimationFrame(
-    game.animationFrame
+    elements.pauseOverlay.hidden =
+      true;
+
+  }
+
+
+  playSFX(
+    SFX.resume
   );
 
+
   game.animationFrame =
-    requestAnimationFrame(loop);
+    requestAnimationFrame(
+      loop
+    );
 
 }
 
 
-/* =========================================================
- * LOOP
- * ========================================================= */
+/*
+ * =========================================================
+ * GRAVITY
+ * =========================================================
+ */
+
+function updateGravity() {
+
+  game.level =
+    getLevel(
+      game.lines,
+      game.mode
+    );
+
+  game.dropInterval =
+    Math.max(
+      1,
+      Number(
+        game.modeConfig.gravity(
+          game.level
+        )
+      ) || 900
+    );
+
+}
+
+
+/*
+ * =========================================================
+ * MAIN LOOP
+ * =========================================================
+ */
 
 function loop(timestamp) {
 
   if (!game.running) {
+
     return;
+
   }
 
-  const delta =
-    Math.min(
-      100,
-      timestamp -
-      game.lastTime
-    );
+
+  /*
+   * First frame protection.
+   */
+
+  if (!game.lastTime) {
+
+    game.lastTime =
+      timestamp;
+
+  }
+
+
+  let delta =
+    timestamp -
+    game.lastTime;
+
 
   game.lastTime =
     timestamp;
+
+
+  /*
+   * Never allow a huge background
+   * delta to dump the entire board.
+   */
+
+  delta =
+    Math.min(
+      delta,
+      100
+    );
+
 
   if (
     !game.paused &&
@@ -526,26 +1025,40 @@ function loop(timestamp) {
 
   }
 
+
   draw();
 
-  game.animationFrame =
-    requestAnimationFrame(loop);
+
+  if (game.running) {
+
+    game.animationFrame =
+      requestAnimationFrame(
+        loop
+      );
+
+  }
 
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * UPDATE
- * ========================================================= */
+ * =========================================================
+ */
 
 function update(
   delta,
   timestamp
 ) {
 
+  /*
+   * Ultra timer.
+   */
+
   if (
     game.modeConfig.timed &&
-    game.ultraEndTime
+    game.ultraEndTime !== null
   ) {
 
     const remaining =
@@ -555,7 +1068,15 @@ function update(
         timestamp
       );
 
-    if (remaining <= 0) {
+
+    game.ultraRemaining =
+      remaining /
+      1000;
+
+
+    if (
+      remaining <= 0
+    ) {
 
       finishGame(true);
 
@@ -565,139 +1086,105 @@ function update(
 
   }
 
-  game.accumulator += delta;
 
-  const interval =
+  /*
+   * Gravity is independent from rendering.
+   */
+
+  game.gravityTimer +=
+    delta;
+
+
+  /*
+   * Soft drop makes gravity faster,
+   * but still uses the same timer.
+   */
+
+  const gravityInterval =
     game.softDropping
       ? Math.max(
-          18,
+          16,
           game.dropInterval /
           CONFIG.SOFT_DROP_FACTOR
         )
       : game.dropInterval;
 
+
+  /*
+   * Process gravity ticks.
+   *
+   * Maximum 8 steps per frame prevents
+   * pathological loops.
+   */
+
+  let steps =
+    0;
+
+
   while (
-    game.accumulator >= interval
+    game.gravityTimer >=
+    gravityInterval &&
+    steps < 8
   ) {
 
-    game.accumulator -= interval;
+    game.gravityTimer -=
+      gravityInterval;
 
-    const moved =
-      tryMove(
-        game.board,
-        game.current,
-        0,
-        1
-      );
+    steps++;
 
-    if (moved) {
 
-      game.current = moved;
-      game.lockStartedAt = null;
+    gravityStep();
 
-    } else {
+  }
 
-      if (
-        game.lockStartedAt === null
-      ) {
 
-        game.lockStartedAt =
-          timestamp;
+  /*
+   * Lock timer runs separately.
+   */
 
-      }
+  if (
+    game.grounded
+  ) {
 
-      if (
-        timestamp -
-        game.lockStartedAt >=
-        CONFIG.LOCK_DELAY
-      ) {
+    game.lockTimer +=
+      delta;
 
-        lockPiece();
 
-        break;
+    if (
+      game.lockTimer >=
+      CONFIG.LOCK_DELAY
+    ) {
 
-      }
+      lockPiece();
+
+      return;
 
     }
 
   }
+
 
   updateGameUI();
 
 }
 
 
-/* =========================================================
- * GRAVITY
- * ========================================================= */
+/*
+ * =========================================================
+ * GRAVITY STEP
+ * =========================================================
+ */
 
-function updateGravity() {
+function gravityStep() {
 
-  game.level =
-    getLevel(
-      game.lines,
-      game.mode
-    );
+  if (
+    !game.current
+  ) {
 
-  game.dropInterval =
-    game.modeConfig.gravity(
-      game.level
-    );
+    return;
 
-}
-
-
-/* =========================================================
- * MOVE
- * ========================================================= */
-
-function moveHorizontal(direction) {
-
-  if (!canPlay()) {
-    return false;
   }
 
-  const moved =
-    tryMove(
-      game.board,
-      game.current,
-      direction,
-      0
-    );
-
-  if (!moved) {
-    return false;
-  }
-
-  game.current = moved;
-  game.lastActionWasRotation = false;
-  game.lockStartedAt = null;
-
-  playSFX(
-    SFX.move,
-    {
-      cooldownMs: 35
-    }
-  );
-
-  vibrate(4);
-
-  draw();
-
-  return true;
-
-}
-
-
-/* =========================================================
- * SOFT DROP
- * ========================================================= */
-
-function softDrop() {
-
-  if (!canPlay()) {
-    return false;
-  }
 
   const moved =
     tryMove(
@@ -707,17 +1194,152 @@ function softDrop() {
       1
     );
 
-  if (!moved) {
-    return false;
+
+  if (moved) {
+
+    game.current =
+      moved;
+
+    /*
+     * The piece is no longer grounded.
+     */
+
+    game.grounded =
+      false;
+
+    game.lockTimer =
+      0;
+
+    return;
+
   }
 
-  game.current = moved;
 
-  game.lastActionWasRotation = false;
-  game.lockStartedAt = null;
+  /*
+   * It has touched the stack.
+   */
 
-  game.score +=
-    CONFIG.SCORE.softDrop;
+  if (!game.grounded) {
+
+    game.grounded =
+      true;
+
+    game.lockTimer =
+      0;
+
+  }
+
+}
+
+
+/*
+ * =========================================================
+ * CAN PLAY
+ * =========================================================
+ */
+
+function canPlay() {
+
+  return (
+    game.running &&
+    !game.paused &&
+    !game.over &&
+    Boolean(
+      game.current
+    )
+  );
+
+}
+
+
+/*
+ * =========================================================
+ * LOCK RESET
+ * =========================================================
+ */
+
+function resetLockDelay() {
+
+  if (
+    !game.grounded
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    game.lockResets >=
+    CONFIG.MAX_LOCK_RESETS
+  ) {
+
+    return;
+
+  }
+
+
+  game.lockTimer =
+    0;
+
+  game.lockResets +=
+    1;
+
+}
+
+
+/*
+ * =========================================================
+ * HORIZONTAL MOVE
+ * =========================================================
+ */
+
+function moveHorizontal(
+  direction
+) {
+
+  if (!canPlay()) {
+
+    return false;
+
+  }
+
+
+  const moved =
+    tryMove(
+      game.board,
+      game.current,
+      direction,
+      0
+    );
+
+
+  if (!moved) {
+
+    return false;
+
+  }
+
+
+  game.current =
+    moved;
+
+  game.lastActionWasRotation =
+    false;
+
+  resetLockDelay();
+
+
+  playSFX(
+    SFX.move,
+    {
+      cooldownMs:
+        35
+    }
+  );
+
+
+  vibrate(5);
 
   draw();
 
@@ -726,17 +1348,87 @@ function softDrop() {
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
+ * SOFT DROP
+ * =========================================================
+ */
+
+function softDrop() {
+
+  if (!canPlay()) {
+
+    return false;
+
+  }
+
+
+  const moved =
+    tryMove(
+      game.board,
+      game.current,
+      0,
+      1
+    );
+
+
+  if (!moved) {
+
+    /*
+     * Immediately mark grounded.
+     */
+
+    game.grounded =
+      true;
+
+    return false;
+
+  }
+
+
+  game.current =
+    moved;
+
+  game.score +=
+    CONFIG.SCORE.softDrop;
+
+  game.lastActionWasRotation =
+    false;
+
+  game.grounded =
+    false;
+
+  game.lockTimer =
+    0;
+
+  game.gravityTimer =
+    0;
+
+  draw();
+
+  return true;
+
+}
+
+
+/*
+ * =========================================================
  * HARD DROP
- * ========================================================= */
+ * =========================================================
+ */
 
 function hardDrop() {
 
   if (!canPlay()) {
+
     return;
+
   }
 
-  let distance = 0;
+
+  let distance =
+    0;
+
 
   while (true) {
 
@@ -748,37 +1440,66 @@ function hardDrop() {
         1
       );
 
+
     if (!moved) {
+
       break;
+
     }
 
-    game.current = moved;
+
+    game.current =
+      moved;
+
     distance++;
 
   }
+
 
   game.score +=
     distance *
     CONFIG.SCORE.hardDrop;
 
-  playSFX(SFX.drop);
+
+  game.grounded =
+    true;
+
+  game.gravityTimer =
+    0;
+
+  game.lockTimer =
+    CONFIG.LOCK_DELAY;
+
+
+  playSFX(
+    SFX.drop
+  );
+
 
   vibrate(12);
+
 
   lockPiece();
 
 }
 
 
-/* =========================================================
- * ROTATE
- * ========================================================= */
+/*
+ * =========================================================
+ * ROTATION
+ * =========================================================
+ */
 
-function rotate(direction) {
+function rotate(
+  direction
+) {
 
   if (!canPlay()) {
+
     return false;
+
   }
+
 
   const result =
     tryRotate(
@@ -787,22 +1508,41 @@ function rotate(direction) {
       direction
     );
 
+
   if (!result) {
+
     return false;
+
   }
+
 
   game.current =
     result.piece;
 
-  game.lastActionWasRotation = true;
-  game.lockStartedAt = null;
+  game.lastActionWasRotation =
+    true;
+
+
+  resetLockDelay();
+
+
+  /*
+   * A rotation also means the
+   * next gravity tick starts cleanly.
+   */
+
+  game.gravityTimer =
+    0;
+
 
   playSFX(
     SFX.rotate,
     {
-      cooldownMs: 40
+      cooldownMs:
+        40
     }
   );
+
 
   vibrate(5);
 
@@ -813,9 +1553,11 @@ function rotate(direction) {
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * HOLD
- * ========================================================= */
+ * =========================================================
+ */
 
 function holdPiece() {
 
@@ -823,22 +1565,28 @@ function holdPiece() {
     !canPlay() ||
     game.holdUsed
   ) {
+
     return;
+
   }
+
 
   const currentType =
     game.current.type;
 
+
   if (game.hold) {
 
-    const nextType =
+    const heldType =
       game.hold;
 
     game.hold =
       currentType;
 
     game.current =
-      createPiece(nextType);
+      createPiece(
+        heldType
+      );
 
   } else {
 
@@ -850,11 +1598,44 @@ function holdPiece() {
 
   }
 
-  game.holdUsed = true;
-  game.lockStartedAt = null;
-  game.lastActionWasRotation = false;
 
-  playSFX(SFX.hold);
+  game.holdUsed =
+    true;
+
+  game.gravityTimer =
+    0;
+
+  game.lockTimer =
+    0;
+
+  game.grounded =
+    false;
+
+  game.lockResets =
+    0;
+
+  game.lastActionWasRotation =
+    false;
+
+
+  if (
+    collides(
+      game.board,
+      game.current
+    )
+  ) {
+
+    finishGame(false);
+
+    return;
+
+  }
+
+
+  playSFX(
+    SFX.hold
+  );
+
 
   vibrate(8);
 
@@ -863,15 +1644,23 @@ function holdPiece() {
 }
 
 
-/* =========================================================
- * LOCK
- * ========================================================= */
+/*
+ * =========================================================
+ * LOCK PIECE
+ * =========================================================
+ */
 
 function lockPiece() {
 
-  if (!game.current) {
+  if (
+    !game.current ||
+    game.over
+  ) {
+
     return;
+
   }
+
 
   const wasTSpin =
     isTSpin(
@@ -880,41 +1669,66 @@ function lockPiece() {
       game.lastActionWasRotation
     );
 
+
   game.board =
     merge(
       game.board,
       game.current
     );
 
-  playSFX(SFX.lock);
+
+  playSFX(
+    SFX.lock
+  );
+
 
   const result =
-    clearLines(game.board);
+    clearLines(
+      game.board
+    );
+
 
   game.board =
     result.board;
 
+
   const cleared =
     result.lines;
 
+
+  game.lastClearWasSpecial =
+    false;
+
+
   if (wasTSpin) {
 
-    scoreTSpin(cleared);
+    game.lastClearWasSpecial =
+      true;
+
+    scoreTSpin(
+      cleared
+    );
 
   } else if (cleared > 0) {
 
-    scoreNormalClear(cleared);
+    scoreNormalClear(
+      cleared
+    );
 
   } else {
 
-    game.combo = -1;
-    game.lastClearWasSpecial = false;
+    game.combo =
+      -1;
 
   }
 
-  game.lines += cleared;
+
+  game.lines +=
+    cleared;
+
 
   updateGravity();
+
 
   if (cleared > 0) {
 
@@ -931,17 +1745,27 @@ function lockPiece() {
 
   }
 
+
   if (
-    isPerfectClear(game.board) &&
-    cleared > 0
+    cleared > 0 &&
+    isPerfectClear(
+      game.board
+    )
   ) {
 
     game.score +=
       CONFIG.SCORE.perfectClear;
 
-    showToast("Perfect Clear");
+    showToast(
+      "Perfect Clear"
+    );
 
   }
+
+
+  /*
+   * Sprint completion.
+   */
 
   if (
     game.mode === "sprint" &&
@@ -955,42 +1779,55 @@ function lockPiece() {
 
   }
 
-  game.current =
-    takeNextPiece();
 
-  game.holdUsed = false;
-  game.lockStartedAt = null;
-  game.lastActionWasRotation = false;
+  /*
+   * Spawn next.
+   */
 
-  if (
-    collides(
-      game.board,
-      game.current
-    )
-  ) {
+  if (!spawnPiece()) {
 
-    finishGame(false);
+    return;
 
   }
+
+
+  updateGameUI();
+
+  draw();
 
 }
 
 
-/* =========================================================
- * SCORE
- * ========================================================= */
+/*
+ * =========================================================
+ * NORMAL SCORING
+ * =========================================================
+ */
 
-function scoreNormalClear(lines) {
+function scoreNormalClear(
+  lines
+) {
 
-  game.combo += 1;
+  game.combo +=
+    1;
 
-  let score =
+
+  const base =
     scoringLines(
       lines,
       game.level
     );
 
-  if (lines === 4) {
+
+  let score =
+    base;
+
+
+  const difficult =
+    lines === 4;
+
+
+  if (difficult) {
 
     if (game.b2b) {
 
@@ -1001,63 +1838,121 @@ function scoreNormalClear(lines) {
 
     }
 
-    game.b2b = true;
+    game.b2b =
+      true;
 
   } else {
 
-    game.b2b = false;
+    game.b2b =
+      false;
 
   }
 
-  if (game.combo > 0) {
+
+  if (
+    game.combo > 0
+  ) {
 
     score +=
       game.combo *
       CONFIG.SCORE.combo;
 
-    playSFX(SFX.combo);
+    playSFX(
+      SFX.combo
+    );
 
   }
 
-  game.score += score;
+
+  game.score +=
+    score;
 
 }
 
 
-function scoreTSpin(lines) {
+/*
+ * =========================================================
+ * T-SPIN
+ * =========================================================
+ */
 
-  game.combo += 1;
+function scoreTSpin(
+  lines
+) {
 
-  let score = 0;
+  game.combo +=
+    1;
 
-  if (lines === 1) {
-    score = CONFIG.SCORE.tSpinSingle;
-  } else if (lines === 2) {
-    score = CONFIG.SCORE.tSpinDouble;
-  } else if (lines === 3) {
-    score = CONFIG.SCORE.tSpinTriple;
+
+  let score =
+    0;
+
+
+  if (
+    lines === 1
+  ) {
+
+    score =
+      CONFIG.SCORE.tSpinSingle;
+
+  } else if (
+    lines === 2
+  ) {
+
+    score =
+      CONFIG.SCORE.tSpinDouble;
+
+  } else if (
+    lines === 3
+  ) {
+
+    score =
+      CONFIG.SCORE.tSpinTriple;
+
   } else {
-    score = CONFIG.SCORE.tSpinMini;
+
+    score =
+      CONFIG.SCORE.tSpinMini;
+
   }
 
-  score *= game.level;
 
-  if (game.b2b) {
+  score *=
+    game.level;
+
+
+  if (
+    game.b2b
+  ) {
+
     score =
       Math.floor(
         score * 1.5
       );
+
   }
+
 
   game.b2b =
     lines > 0;
 
-  game.score += score;
 
-  playSFX(SFX.tSpin);
+  game.score +=
+    score;
+
+
+  playSFX(
+    SFX.tSpin
+  );
 
 }
 
+
+/*
+ * =========================================================
+ * CLEAR SOUND
+ * =========================================================
+ */
 
 function playClearSound(
   lines,
@@ -1065,28 +1960,43 @@ function playClearSound(
 ) {
 
   if (tSpin) {
-    playSFX(SFX.tSpin);
+
+    playSFX(
+      SFX.tSpin
+    );
+
     return;
+
   }
+
 
   if (lines >= 4) {
 
-    playSFX(SFX.tetris);
+    playSFX(
+      SFX.tetris
+    );
 
-    showToast("TETRIS");
+    showToast(
+      "TETRIS"
+    );
 
     return;
 
   }
 
-  playSFX(SFX.line);
+
+  playSFX(
+    SFX.line
+  );
 
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * PAUSE
- * ========================================================= */
+ * =========================================================
+ */
 
 function pauseGame() {
 
@@ -1094,30 +2004,60 @@ function pauseGame() {
     !game.running ||
     game.over
   ) {
+
     return;
+
   }
+
 
   if (game.paused) {
+
     resumeGame();
+
     return;
+
   }
 
-  game.paused = true;
-  game.softDropping = false;
 
-  stopRepeat();
-  resetGesture();
+  game.paused =
+    true;
 
-  if (elements.pauseOverlay) {
-    elements.pauseOverlay.hidden = false;
+  game.softDropping =
+    false;
+
+  game.lastTime =
+    0;
+
+  /*
+   * Timers stop because update()
+   * is no longer called.
+   */
+
+  if (
+    elements.pauseOverlay
+  ) {
+
+    elements.pauseOverlay.hidden =
+      false;
+
   }
 
-  playSFX(SFX.pause);
+
+  playSFX(
+    SFX.pause
+  );
+
 
   draw();
 
 }
 
+
+/*
+ * =========================================================
+ * RESUME
+ * =========================================================
+ */
 
 function resumeGame() {
 
@@ -1125,23 +2065,39 @@ function resumeGame() {
     !game.running ||
     game.over
   ) {
+
     return;
+
   }
 
-  game.paused = false;
+
+  game.paused =
+    false;
 
   game.lastTime =
     performance.now();
 
-  game.accumulator = 0;
+  /*
+   * Do not reset gravityTimer.
+   * The piece resumes exactly where
+   * it was before pause.
+   */
 
-  if (elements.pauseOverlay) {
-    elements.pauseOverlay.hidden = true;
+  if (
+    elements.pauseOverlay
+  ) {
+
+    elements.pauseOverlay.hidden =
+      true;
+
   }
+
 
   unlockAudio();
 
-  playSFX(SFX.resume);
+  playSFX(
+    SFX.resume
+  );
 
   focusGameCanvas();
 
@@ -1150,23 +2106,53 @@ function resumeGame() {
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * FINISH
- * ========================================================= */
+ * =========================================================
+ */
 
-function finishGame(completed) {
+function finishGame(
+  completed
+) {
 
   if (game.over) {
+
     return;
+
   }
 
-  game.over = true;
-  game.running = false;
-  game.paused = false;
-  game.softDropping = false;
+
+  game.over =
+    true;
+
+  game.running =
+    false;
+
+  game.paused =
+    false;
+
+  game.softDropping =
+    false;
+
+
+  if (
+    game.animationFrame !==
+    null
+  ) {
+
+    cancelAnimationFrame(
+      game.animationFrame
+    );
+
+    game.animationFrame =
+      null;
+
+  }
+
 
   stopRepeat();
-  resetGesture();
+
 
   const elapsed =
     (
@@ -1175,15 +2161,20 @@ function finishGame(completed) {
     ) /
     1000;
 
+
   const result = {
 
-    mode: game.mode,
+    mode:
+      game.mode,
 
-    score: game.score,
+    score:
+      game.score,
 
-    lines: game.lines,
+    lines:
+      game.lines,
 
-    level: game.level,
+    level:
+      game.level,
 
     time:
       game.mode === "ultra"
@@ -1191,17 +2182,22 @@ function finishGame(completed) {
         : elapsed,
 
     completed:
-      Boolean(completed)
+      Boolean(
+        completed
+      )
 
   };
+
 
   recordGame(
     data,
     result
   );
 
+
   window.KasaneData =
     data;
+
 
   playSFX(
     completed
@@ -1209,55 +2205,97 @@ function finishGame(completed) {
       : SFX.gameover
   );
 
+
   vibrate(
     completed
       ? 35
       : 60
   );
 
-  showResult(result);
+
+  showResult(
+    result
+  );
+
 
   updateHome();
 
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * RESULT
- * ========================================================= */
+ * =========================================================
+ */
 
-function showResult(result) {
+function showResult(
+  result
+) {
 
-  if (elements.resultScore) {
+  if (
+    elements.resultScore
+  ) {
+
     elements.resultScore.textContent =
-      String(result.score);
+      String(
+        result.score
+      );
+
   }
 
-  if (elements.resultLines) {
+
+  if (
+    elements.resultLines
+  ) {
+
     elements.resultLines.textContent =
-      String(result.lines);
+      String(
+        result.lines
+      );
+
   }
 
-  if (elements.resultLevel) {
+
+  if (
+    elements.resultLevel
+  ) {
+
     elements.resultLevel.textContent =
-      String(result.level);
+      String(
+        result.level
+      );
+
   }
 
-  if (elements.resultMarkText) {
+
+  if (
+    elements.resultMarkText
+  ) {
+
     elements.resultMarkText.textContent =
       result.completed
         ? "CLEAR"
         : "GAME";
+
   }
 
-  if (elements.resultKicker) {
+
+  if (
+    elements.resultKicker
+  ) {
+
     elements.resultKicker.textContent =
       result.completed
         ? "GAME COMPLETE"
         : "GAME OVER";
+
   }
 
-  if (elements.resultTitle) {
+
+  if (
+    elements.resultTitle
+  ) {
 
     if (
       result.mode === "sprint" &&
@@ -1285,7 +2323,10 @@ function showResult(result) {
 
   }
 
-  if (elements.resultDescription) {
+
+  if (
+    elements.resultDescription
+  ) {
 
     elements.resultDescription.textContent =
       result.mode === "sprint"
@@ -1300,71 +2341,77 @@ function showResult(result) {
 
   }
 
-  showScreen("result");
 
-}
-
-
-/* =========================================================
- * PLAY STATE
- * ========================================================= */
-
-function canPlay() {
-
-  return (
-    game.running &&
-    !game.paused &&
-    !game.over &&
-    Boolean(game.current)
+  showScreen(
+    "result"
   );
 
 }
 
 
-/* =========================================================
- * CANVAS
- * ========================================================= */
+/*
+ * =========================================================
+ * CANVAS RESIZE
+ * =========================================================
+ */
 
 function resizeCanvas() {
 
-  if (!canvas || !ctx) {
+  if (
+    !canvas ||
+    !ctx
+  ) {
+
     return;
+
   }
+
 
   const rect =
     canvas.getBoundingClientRect();
 
+
   const dpr =
     Math.min(
-      window.devicePixelRatio || 1,
-      3
+      window.devicePixelRatio ||
+      1,
+      2
     );
+
 
   const width =
     Math.max(
       1,
-      Math.round(
-        rect.width * dpr
+      Math.floor(
+        rect.width *
+        dpr
       )
     );
+
 
   const height =
     Math.max(
       1,
-      Math.round(
-        rect.height * dpr
+      Math.floor(
+        rect.height *
+        dpr
       )
     );
+
 
   if (
     canvas.width !== width ||
     canvas.height !== height
   ) {
 
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width =
+      width;
+
+    canvas.height =
+      height;
 
   }
+
 
   ctx.setTransform(
     dpr,
@@ -1378,62 +2425,94 @@ function resizeCanvas() {
 }
 
 
+/*
+ * =========================================================
+ * BOARD GEOMETRY
+ * =========================================================
+ */
+
 function getBoardGeometry() {
 
   const rect =
     canvas.getBoundingClientRect();
 
+
   const width =
     rect.width;
+
 
   const height =
     rect.height;
 
+
   const cell =
     Math.min(
-      width / CONFIG.WIDTH,
-      height / CONFIG.HEIGHT
+      width /
+        CONFIG.WIDTH,
+      height /
+        CONFIG.HEIGHT
     );
 
+
   const boardWidth =
-    cell * CONFIG.WIDTH;
+    cell *
+    CONFIG.WIDTH;
+
 
   const boardHeight =
-    cell * CONFIG.HEIGHT;
+    cell *
+    CONFIG.HEIGHT;
+
 
   return {
 
     x:
-      (width - boardWidth) / 2,
+      (width -
+       boardWidth) /
+      2,
 
     y:
-      (height - boardHeight) / 2,
+      (height -
+       boardHeight) /
+      2,
 
     cell,
 
-    width: boardWidth,
+    width:
+      boardWidth,
 
-    height: boardHeight
+    height:
+      boardHeight
 
   };
 
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * DRAW
- * ========================================================= */
+ * =========================================================
+ */
 
 function draw() {
 
-  if (!canvas || !ctx) {
+  if (
+    !canvas ||
+    !ctx
+  ) {
+
     return;
+
   }
+
 
   resizeCanvas();
 
+
   const rect =
     canvas.getBoundingClientRect();
+
 
   ctx.clearRect(
     0,
@@ -1442,14 +2521,21 @@ function draw() {
     rect.height
   );
 
+
   const g =
     getBoardGeometry();
 
+
   drawBoardBackground(g);
+
   drawGrid(g);
+
   drawPlacedBlocks(g);
 
-  if (game.current) {
+
+  if (
+    game.current
+  ) {
 
     if (
       data.settings.ghost !== false
@@ -1459,6 +2545,7 @@ function draw() {
 
     }
 
+
     drawPiece(
       g,
       game.current,
@@ -1467,12 +2554,19 @@ function draw() {
 
   }
 
+
   drawBoardFrame(g);
 
   drawSidePreviews();
 
 }
 
+
+/*
+ * =========================================================
+ * BOARD BACKGROUND
+ * =========================================================
+ */
 
 function drawBoardBackground(g) {
 
@@ -1481,21 +2575,26 @@ function drawBoardBackground(g) {
       0,
       g.y,
       0,
-      g.y + g.height
+      g.y +
+      g.height
     );
+
 
   gradient.addColorStop(
     0,
     "#f4ecd9"
   );
 
+
   gradient.addColorStop(
     1,
     "#e7dbc0"
   );
 
+
   ctx.fillStyle =
     gradient;
+
 
   ctx.fillRect(
     g.x,
@@ -1507,14 +2606,22 @@ function drawBoardBackground(g) {
 }
 
 
+/*
+ * =========================================================
+ * GRID
+ * =========================================================
+ */
+
 function drawGrid(g) {
 
   ctx.save();
 
   ctx.strokeStyle =
-    "rgba(71,90,97,.12)";
+    "rgba(71,90,97,0.12)";
 
-  ctx.lineWidth = 1;
+  ctx.lineWidth =
+    1;
+
 
   for (
     let x = 0;
@@ -1523,7 +2630,10 @@ function drawGrid(g) {
   ) {
 
     const px =
-      g.x + x * g.cell;
+      g.x +
+      x *
+      g.cell;
+
 
     ctx.beginPath();
 
@@ -1534,12 +2644,14 @@ function drawGrid(g) {
 
     ctx.lineTo(
       px,
-      g.y + g.height
+      g.y +
+      g.height
     );
 
     ctx.stroke();
 
   }
+
 
   for (
     let y = 0;
@@ -1548,7 +2660,10 @@ function drawGrid(g) {
   ) {
 
     const py =
-      g.y + y * g.cell;
+      g.y +
+      y *
+      g.cell;
+
 
     ctx.beginPath();
 
@@ -1558,7 +2673,8 @@ function drawGrid(g) {
     );
 
     ctx.lineTo(
-      g.x + g.width,
+      g.x +
+      g.width,
       py
     );
 
@@ -1566,15 +2682,23 @@ function drawGrid(g) {
 
   }
 
+
   ctx.restore();
 
 }
 
 
+/*
+ * =========================================================
+ * PLACED BLOCKS
+ * =========================================================
+ */
+
 function drawPlacedBlocks(g) {
 
   const hidden =
     CONFIG.HIDDEN_ROWS;
+
 
   for (
     let y = hidden;
@@ -1591,9 +2715,13 @@ function drawPlacedBlocks(g) {
       const type =
         game.board[y][x];
 
+
       if (!type) {
+
         continue;
+
       }
+
 
       drawCell(
         g,
@@ -1610,6 +2738,12 @@ function drawPlacedBlocks(g) {
 }
 
 
+/*
+ * =========================================================
+ * GHOST
+ * =========================================================
+ */
+
 function drawGhost(g) {
 
   const gy =
@@ -1618,17 +2752,31 @@ function drawGhost(g) {
       game.current
     );
 
+
+  const ghostPiece = {
+
+    ...game.current,
+
+    y:
+      gy
+
+  };
+
+
   drawPiece(
     g,
-    {
-      ...game.current,
-      y: gy
-    },
+    ghostPiece,
     0.20
   );
 
 }
 
+
+/*
+ * =========================================================
+ * PIECE
+ * =========================================================
+ */
 
 function drawPiece(
   g,
@@ -1639,19 +2787,26 @@ function drawPiece(
   const hidden =
     CONFIG.HIDDEN_ROWS;
 
+
   for (
     const cell of cells(piece)
   ) {
 
     const visibleY =
-      cell.y - hidden;
+      cell.y -
+      hidden;
+
 
     if (
       visibleY < 0 ||
-      visibleY >= CONFIG.HEIGHT
+      visibleY >=
+      CONFIG.HEIGHT
     ) {
+
       continue;
+
     }
+
 
     drawCell(
       g,
@@ -1666,6 +2821,12 @@ function drawPiece(
 }
 
 
+/*
+ * =========================================================
+ * CELL
+ * =========================================================
+ */
+
 function drawCell(
   g,
   x,
@@ -1675,25 +2836,36 @@ function drawCell(
 ) {
 
   const px =
-    g.x + x * g.cell;
+    g.x +
+    x *
+    g.cell;
+
 
   const py =
-    g.y + y * g.cell;
+    g.y +
+    y *
+    g.cell;
+
 
   const size =
     g.cell;
+
 
   ctx.save();
 
   ctx.globalAlpha =
     alpha;
 
+
   const color =
-    COLORS[type] || "#888";
+    COLORS[type] ||
+    "#888";
+
 
   if (alpha < 1) {
 
-    ctx.strokeStyle = color;
+    ctx.strokeStyle =
+      color;
 
     ctx.lineWidth =
       Math.max(
@@ -1701,12 +2873,16 @@ function drawCell(
         size * 0.08
       );
 
+
     ctx.strokeRect(
-      px + size * .13,
-      py + size * .13,
-      size * .74,
-      size * .74
+      px +
+      size * 0.13,
+      py +
+      size * 0.13,
+      size * 0.74,
+      size * 0.74
     );
+
 
     ctx.restore();
 
@@ -1714,55 +2890,74 @@ function drawCell(
 
   }
 
+
   const gradient =
     ctx.createLinearGradient(
       px,
       py,
-      px + size,
-      py + size
+      px +
+      size,
+      py +
+      size
     );
+
 
   gradient.addColorStop(
     0,
-    lighten(color, .15)
+    lighten(
+      color,
+      0.15
+    )
   );
+
 
   gradient.addColorStop(
     1,
     color
   );
 
+
   ctx.fillStyle =
     gradient;
 
+
   roundRect(
     ctx,
-    px + size * .07,
-    py + size * .07,
-    size * .86,
-    size * .86,
-    size * .16
+    px +
+    size * 0.07,
+    py +
+    size * 0.07,
+    size * 0.86,
+    size * 0.86,
+    size * 0.16
   );
+
 
   ctx.fill();
 
+
   ctx.strokeStyle =
-    "rgba(255,255,255,.30)";
+    "rgba(255,255,255,0.30)";
+
 
   ctx.lineWidth =
     Math.max(
       1,
-      size * .045
+      size * 0.045
     );
+
 
   roundRect(
     ctx,
-    px + size * .07,
-    py + size * .07,
-    size * .86,
-    size * .86,
-    size * .16
+    px +
+    size * 0.07,
+    py +
+    size * 0.07,
+    size * 0.86,
+    size * 0.86,
+    size * 0.16
   );
+
 
   ctx.stroke();
 
@@ -1771,14 +2966,22 @@ function drawCell(
 }
 
 
+/*
+ * =========================================================
+ * FRAME
+ * =========================================================
+ */
+
 function drawBoardFrame(g) {
 
   ctx.save();
 
   ctx.strokeStyle =
-    "rgba(71,90,97,.42)";
+    "rgba(71,90,97,0.42)";
 
-  ctx.lineWidth = 2;
+  ctx.lineWidth =
+    2;
+
 
   ctx.strokeRect(
     g.x,
@@ -1787,14 +2990,17 @@ function drawBoardFrame(g) {
     g.height
   );
 
+
   ctx.restore();
 
 }
 
 
-/* =========================================================
- * PREVIEW
- * ========================================================= */
+/*
+ * =========================================================
+ * SIDE PREVIEWS
+ * =========================================================
+ */
 
 function drawSidePreviews() {
 
@@ -1804,20 +3010,37 @@ function drawSidePreviews() {
     game.hold
   );
 
-  nextCanvases.forEach(
-    (nextCanvas, index) => {
 
-      drawMiniPiece(
-        nextCanvas.getContext("2d"),
+  nextCanvases
+    .forEach(
+      (
         nextCanvas,
-        game.next[index]
-      );
+        index
+      ) => {
 
-    }
-  );
+        const type =
+          game.next[index];
+
+
+        drawMiniPiece(
+          nextCanvas.getContext(
+            "2d"
+          ),
+          nextCanvas,
+          type
+        );
+
+      }
+    );
 
 }
 
+
+/*
+ * =========================================================
+ * MINI PIECE
+ * =========================================================
+ */
 
 function drawMiniPiece(
   context,
@@ -1829,67 +3052,54 @@ function drawMiniPiece(
     !context ||
     !targetCanvas
   ) {
+
     return;
+
   }
 
-  const rect =
-    targetCanvas.getBoundingClientRect();
-
-  const dpr =
-    Math.min(
-      window.devicePixelRatio || 1,
-      2
-    );
 
   const width =
-    Math.max(
-      1,
-      Math.round(rect.width * dpr)
-    );
+    targetCanvas.width;
+
 
   const height =
-    Math.max(
-      1,
-      Math.round(rect.height * dpr)
-    );
+    targetCanvas.height;
 
-  if (
-    targetCanvas.width !== width ||
-    targetCanvas.height !== height
-  ) {
-
-    targetCanvas.width = width;
-    targetCanvas.height = height;
-
-  }
-
-  context.setTransform(
-    dpr,
-    0,
-    0,
-    dpr,
-    0,
-    0
-  );
 
   context.clearRect(
     0,
     0,
-    rect.width,
-    rect.height
+    width,
+    height
   );
 
+
   if (!type) {
+
     return;
+
   }
 
-  const shape =
-    getShape(type, 0);
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
+  const shape =
+    getShape(
+      type,
+      0
+    );
+
+
+  let minX =
+    Infinity;
+
+  let minY =
+    Infinity;
+
+  let maxX =
+    -Infinity;
+
+  let maxY =
+    -Infinity;
+
 
   for (
     let y = 0;
@@ -1904,49 +3114,89 @@ function drawMiniPiece(
     ) {
 
       if (!shape[y][x]) {
+
         continue;
+
       }
 
+
       minX =
-        Math.min(minX, x);
+        Math.min(
+          minX,
+          x
+        );
+
 
       minY =
-        Math.min(minY, y);
+        Math.min(
+          minY,
+          y
+        );
+
 
       maxX =
-        Math.max(maxX, x);
+        Math.max(
+          maxX,
+          x
+        );
+
 
       maxY =
-        Math.max(maxY, y);
+        Math.max(
+          maxY,
+          y
+        );
 
     }
 
   }
 
+
   const cellsWidth =
-    maxX - minX + 1;
+    maxX -
+    minX +
+    1;
+
 
   const cellsHeight =
-    maxY - minY + 1;
+    maxY -
+    minY +
+    1;
+
 
   const size =
     Math.min(
       22,
-      rect.width / (cellsWidth + 1),
-      rect.height / (cellsHeight + 1)
+      width /
+        (
+          cellsWidth +
+          1
+        ),
+      height /
+        (
+          cellsHeight +
+          1
+        )
     );
+
 
   const offsetX =
     (
-      rect.width -
-      cellsWidth * size
-    ) / 2;
+      width -
+      cellsWidth *
+      size
+    ) /
+    2;
+
 
   const offsetY =
     (
-      rect.height -
-      cellsHeight * size
-    ) / 2;
+      height -
+      cellsHeight *
+      size
+    ) /
+    2;
+
 
   for (
     let y = 0;
@@ -1961,15 +3211,26 @@ function drawMiniPiece(
     ) {
 
       if (!shape[y][x]) {
+
         continue;
+
       }
+
 
       drawMiniCell(
         context,
         offsetX +
-          (x - minX) * size,
+        (
+          x -
+          minX
+        ) *
+        size,
         offsetY +
-          (y - minY) * size,
+        (
+          y -
+          minY
+        ) *
+        size,
         size,
         COLORS[type]
       );
@@ -1980,6 +3241,12 @@ function drawMiniPiece(
 
 }
 
+
+/*
+ * =========================================================
+ * MINI CELL
+ * =========================================================
+ */
 
 function drawMiniCell(
   context,
@@ -1994,25 +3261,32 @@ function drawMiniCell(
   context.fillStyle =
     color;
 
+
   roundRect(
     context,
-    x + size * .08,
-    y + size * .08,
-    size * .84,
-    size * .84,
-    size * .15
+    x +
+    size * 0.08,
+    y +
+    size * 0.08,
+    size * 0.84,
+    size * 0.84,
+    size * 0.15
   );
+
 
   context.fill();
 
+
   context.strokeStyle =
-    "rgba(255,255,255,.35)";
+    "rgba(255,255,255,0.35)";
+
 
   context.lineWidth =
     Math.max(
       1,
-      size * .04
+      size * 0.04
     );
+
 
   context.stroke();
 
@@ -2021,158 +3295,282 @@ function drawMiniCell(
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * UI
- * ========================================================= */
+ * =========================================================
+ */
 
 function updateGameUI() {
 
   if (elements.modeLabel) {
+
     elements.modeLabel.textContent =
       game.modeConfig.name;
+
   }
+
 
   if (elements.levelLabel) {
+
     elements.levelLabel.textContent =
-      String(game.level);
+      String(
+        game.level
+      );
+
   }
+
 
   if (elements.scoreLabel) {
+
     elements.scoreLabel.textContent =
-      String(game.score);
+      String(
+        game.score
+      );
+
   }
+
 
   if (elements.linesLabel) {
+
     elements.linesLabel.textContent =
-      String(game.lines);
+      String(
+        game.lines
+      );
+
   }
+
 
   if (elements.comboLabel) {
+
     elements.comboLabel.textContent =
       String(
-        Math.max(0, game.combo)
+        Math.max(
+          0,
+          game.combo
+        )
       );
+
   }
+
 
   if (elements.b2bLabel) {
+
     elements.b2bLabel.textContent =
-      game.b2b ? "ON" : "0";
+      game.b2b
+        ? "ON"
+        : "0";
+
   }
 
-  if (elements.scoreLabelMobile) {
+
+  if (
+    elements.scoreLabelMobile
+  ) {
+
     elements.scoreLabelMobile.textContent =
-      String(game.score);
+      String(
+        game.score
+      );
+
   }
 
-  if (elements.linesLabelMobile) {
+
+  if (
+    elements.linesLabelMobile
+  ) {
+
     elements.linesLabelMobile.textContent =
-      String(game.lines);
+      String(
+        game.lines
+      );
+
   }
+
 
   drawSidePreviews();
 
 }
 
 
+/*
+ * =========================================================
+ * HOME
+ * =========================================================
+ */
+
 function updateHome() {
 
-  if (elements.homeBestScore) {
+  if (
+    elements.homeBestScore
+  ) {
+
     elements.homeBestScore.textContent =
       String(
-        data.stats.bestScore || 0
+        data.stats.bestScore ||
+        0
       );
+
   }
 
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * RECORDS
- * ========================================================= */
+ * =========================================================
+ */
 
 function renderRecords() {
 
-  if (elements.gamesStat) {
+  if (
+    elements.gamesStat
+  ) {
+
     elements.gamesStat.textContent =
-      String(data.stats.games || 0);
+      String(
+        data.stats.games ||
+        0
+      );
+
   }
 
-  if (elements.bestStat) {
+
+  if (
+    elements.bestStat
+  ) {
+
     elements.bestStat.textContent =
-      String(data.stats.bestScore || 0);
+      String(
+        data.stats.bestScore ||
+        0
+      );
+
   }
 
-  if (elements.linesStat) {
+
+  if (
+    elements.linesStat
+  ) {
+
     elements.linesStat.textContent =
-      String(data.stats.bestLines || 0);
+      String(
+        data.stats.bestLines ||
+        0
+      );
+
   }
 
-  if (elements.sprintStat) {
+
+  if (
+    elements.sprintStat
+  ) {
+
     elements.sprintStat.textContent =
-      formatTime(data.stats.bestSprint);
+      formatTime(
+        data.stats.bestSprint
+      );
+
   }
 
-  if (!elements.recordList) {
+
+  if (
+    !elements.recordList
+  ) {
+
     return;
+
   }
 
-  elements.recordList.innerHTML = "";
 
-  if (!data.records.length) {
+  elements.recordList.innerHTML =
+    "";
+
+
+  if (
+    !data.records.length
+  ) {
 
     const empty =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     empty.className =
       "record-empty";
 
+
     empty.textContent =
       "還沒有棋局紀錄。";
+
 
     elements.recordList.appendChild(
       empty
     );
 
+
     return;
 
   }
+
 
   data.records.forEach(
     record => {
 
       const item =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       item.className =
         "record-item";
 
+
       const date =
-        new Date(record.date);
+        new Date(
+          record.date
+        );
+
 
       const dateText =
         date.toLocaleDateString(
           "zh-TW"
         );
 
+
       item.innerHTML = `
+
         <div>
+
           <strong>
-            ${escapeHTML(record.mode)}
+            ${escapeHTML(
+              record.mode
+            )}
           </strong>
+
           <span>
             ${dateText}
           </span>
+
         </div>
 
         <div>
+
           <strong>
             ${record.score}
           </strong>
+
           <span>
             ${record.lines} 行
           </span>
+
         </div>
+
       `;
+
 
       elements.recordList.appendChild(
         item
@@ -2184,9 +3582,11 @@ function renderRecords() {
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * KEYBOARD
- * ========================================================= */
+ * =========================================================
+ */
 
 function setupKeyboard() {
 
@@ -2195,12 +3595,40 @@ function setupKeyboard() {
     event => {
 
       if (
-        currentScreen !== "game"
+        currentScreen !==
+        "game"
       ) {
+
         return;
+
       }
 
+
       unlockAudio();
+
+
+      /*
+       * Prevent browser scrolling.
+       */
+
+      if (
+        [
+          "ArrowLeft",
+          "ArrowRight",
+          "ArrowDown",
+          "ArrowUp",
+          " ",
+          "Shift",
+          "Control"
+        ].includes(
+          event.key
+        )
+      ) {
+
+        event.preventDefault();
+
+      }
+
 
       if (
         matches(
@@ -2209,17 +3637,30 @@ function setupKeyboard() {
         )
       ) {
 
-        event.preventDefault();
-
         pauseGame();
 
         return;
 
       }
 
-      if (game.paused) {
+
+      if (
+        game.paused
+      ) {
+
         return;
+
       }
+
+
+      /*
+       * Ignore repeated keydown for
+       * one-shot actions.
+       */
+
+      const oneShot =
+        event.repeat;
+
 
       if (
         matches(
@@ -2228,15 +3669,28 @@ function setupKeyboard() {
         )
       ) {
 
-        event.preventDefault();
+        if (
+          !game.heldKeys.has(
+            "left"
+          )
+        ) {
 
-        if (!event.repeat) {
+          game.heldKeys.add(
+            "left"
+          );
+
           moveHorizontal(-1);
+
+          startRepeat(
+            "left"
+          );
+
         }
 
         return;
 
       }
+
 
       if (
         matches(
@@ -2245,15 +3699,28 @@ function setupKeyboard() {
         )
       ) {
 
-        event.preventDefault();
+        if (
+          !game.heldKeys.has(
+            "right"
+          )
+        ) {
 
-        if (!event.repeat) {
+          game.heldKeys.add(
+            "right"
+          );
+
           moveHorizontal(1);
+
+          startRepeat(
+            "right"
+          );
+
         }
 
         return;
 
       }
+
 
       if (
         matches(
@@ -2262,17 +3729,15 @@ function setupKeyboard() {
         )
       ) {
 
-        event.preventDefault();
+        game.softDropping =
+          true;
 
-        game.softDropping = true;
-
-        if (!event.repeat) {
-          softDrop();
-        }
+        softDrop();
 
         return;
 
       }
+
 
       if (
         matches(
@@ -2281,15 +3746,16 @@ function setupKeyboard() {
         )
       ) {
 
-        event.preventDefault();
+        if (!oneShot) {
 
-        if (!event.repeat) {
           rotate(1);
+
         }
 
         return;
 
       }
+
 
       if (
         matches(
@@ -2298,15 +3764,16 @@ function setupKeyboard() {
         )
       ) {
 
-        event.preventDefault();
+        if (!oneShot) {
 
-        if (!event.repeat) {
           rotate(-1);
+
         }
 
         return;
 
       }
+
 
       if (
         matches(
@@ -2315,15 +3782,16 @@ function setupKeyboard() {
         )
       ) {
 
-        event.preventDefault();
+        if (!oneShot) {
 
-        if (!event.repeat) {
           hardDrop();
+
         }
 
         return;
 
       }
+
 
       if (
         matches(
@@ -2332,10 +3800,10 @@ function setupKeyboard() {
         )
       ) {
 
-        event.preventDefault();
+        if (!oneShot) {
 
-        if (!event.repeat) {
           holdPiece();
+
         }
 
       }
@@ -2350,14 +3818,62 @@ function setupKeyboard() {
 
       if (
         matches(
+          KEYS.left,
+          event.key
+        )
+      ) {
+
+        game.heldKeys.delete(
+          "left"
+        );
+
+        stopRepeat();
+
+      }
+
+
+      if (
+        matches(
+          KEYS.right,
+          event.key
+        )
+      ) {
+
+        game.heldKeys.delete(
+          "right"
+        );
+
+        stopRepeat();
+
+      }
+
+
+      if (
+        matches(
           KEYS.down,
           event.key
         )
       ) {
 
-        game.softDropping = false;
+        game.softDropping =
+          false;
 
       }
+
+    }
+  );
+
+
+  window.addEventListener(
+    "blur",
+    () => {
+
+      game.heldKeys.clear();
+
+      game.softDropping =
+        false;
+
+      stopRepeat();
 
     }
   );
@@ -2365,84 +3881,110 @@ function setupKeyboard() {
 }
 
 
-/* =========================================================
- * MOBILE BUTTONS
- * ========================================================= */
+/*
+ * =========================================================
+ * MOBILE CONTROLS
+ * =========================================================
+ */
 
 function setupMobileControls() {
 
-  $$(".control-button").forEach(
-    button => {
+  $$(".control-button")
+    .forEach(button => {
 
       const action =
         button.dataset.action;
+
+
+      button.style.touchAction =
+        "none";
+
 
       button.addEventListener(
         "pointerdown",
         event => {
 
           event.preventDefault();
-          event.stopPropagation();
-
-          try {
-            button.setPointerCapture(
-              event.pointerId
-            );
-          } catch {}
 
           unlockAudio();
 
-          if (!canPlay()) {
-            return;
-          }
 
-          switch (action) {
+          try {
 
-            case "left":
-              moveHorizontal(-1);
-              startRepeat("left");
-              break;
+            button.setPointerCapture(
+              event.pointerId
+            );
 
-            case "right":
-              moveHorizontal(1);
-              startRepeat("right");
-              break;
+          } catch {}
 
-            case "down":
-              game.softDropping = true;
-              softDrop();
-              break;
 
-            case "rotate":
-              rotate(1);
-              break;
+          if (
+            action === "left"
+          ) {
 
-            case "rotateCCW":
-              rotate(-1);
-              break;
+            moveHorizontal(-1);
 
-            case "drop":
-              hardDrop();
-              break;
+            startRepeat(
+              "left"
+            );
 
-            case "hold":
-              holdPiece();
-              break;
+          } else if (
+            action === "right"
+          ) {
+
+            moveHorizontal(1);
+
+            startRepeat(
+              "right"
+            );
+
+          } else if (
+            action === "down"
+          ) {
+
+            game.softDropping =
+              true;
+
+            softDrop();
+
+          } else if (
+            action === "rotate"
+          ) {
+
+            rotate(1);
+
+          } else if (
+            action === "rotateCCW"
+          ) {
+
+            rotate(-1);
+
+          } else if (
+            action === "drop"
+          ) {
+
+            hardDrop();
+
+          } else if (
+            action === "hold"
+          ) {
+
+            holdPiece();
 
           }
 
         },
         {
-          passive: false
+          passive:
+            false
         }
       );
 
 
-      button.addEventListener(
-        "pointerup",
+      const release =
         event => {
 
-          event.preventDefault();
+          event?.preventDefault?.();
 
           stopRepeat();
 
@@ -2455,51 +3997,59 @@ function setupMobileControls() {
 
           }
 
-        },
+        };
+
+
+      button.addEventListener(
+        "pointerup",
+        release,
         {
-          passive: false
+          passive:
+            false
         }
       );
 
 
       button.addEventListener(
         "pointercancel",
-        () => {
-
-          stopRepeat();
-
-          game.softDropping =
-            false;
-
+        release,
+        {
+          passive:
+            false
         }
       );
 
 
       button.addEventListener(
-        "pointerleave",
-        () => {
-
-          stopRepeat();
-
+        "lostpointercapture",
+        release,
+        {
+          passive:
+            false
         }
       );
 
-    }
-  );
+    });
 
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * DAS / ARR
- * ========================================================= */
+ * =========================================================
+ */
 
-function startRepeat(action) {
+function startRepeat(
+  action
+) {
 
   stopRepeat();
 
+
   game.touchAction =
     action;
+
 
   game.touchRepeat =
     window.setTimeout(
@@ -2509,22 +4059,40 @@ function startRepeat(action) {
           window.setInterval(
             () => {
 
-              if (!canPlay()) {
+              if (
+                !canPlay()
+              ) {
+
                 return;
+
               }
 
-              if (action === "left") {
+
+              if (
+                action ===
+                "left"
+              ) {
+
                 moveHorizontal(-1);
+
               } else {
+
                 moveHorizontal(1);
+
               }
 
             },
-            CONFIG.ARR
+            Math.max(
+              1,
+              CONFIG.ARR
+            )
           );
 
       },
-      CONFIG.DAS
+      Math.max(
+        1,
+        CONFIG.DAS
+      )
     );
 
 }
@@ -2533,7 +4101,8 @@ function startRepeat(action) {
 function stopRepeat() {
 
   if (
-    game.touchRepeat !== null
+    game.touchRepeat !==
+    null
   ) {
 
     clearTimeout(
@@ -2546,299 +4115,58 @@ function stopRepeat() {
 
   }
 
-  game.touchRepeat = null;
-  game.touchAction = null;
+
+  game.touchRepeat =
+    null;
+
+  game.touchAction =
+    null;
 
 }
 
 
-/* =========================================================
- * TOUCH / SWIPE GAMEPLAY
- * ========================================================= */
-
-function resetGesture() {
-
-  game.gesture.active = false;
-  game.gesture.pointerId = null;
-  game.gesture.startX = 0;
-  game.gesture.startY = 0;
-  game.gesture.lastX = 0;
-  game.gesture.lastY = 0;
-  game.gesture.startTime = 0;
-  game.gesture.moved = false;
-
-}
-
+/*
+ * =========================================================
+ * CANVAS POINTER
+ * =========================================================
+ */
 
 function setupCanvasPointer() {
 
   if (!canvas) {
+
     return;
+
   }
 
-  canvas.style.touchAction = "none";
 
-  canvas.addEventListener(
-    "contextmenu",
-    event => {
-      event.preventDefault();
-    }
-  );
+  canvas.style.touchAction =
+    "none";
 
 
   canvas.addEventListener(
     "pointerdown",
-    event => {
-
-      if (
-        currentScreen !== "game"
-      ) {
-        return;
-      }
-
-      if (
-        event.pointerType === "mouse" &&
-        event.button !== 0
-      ) {
-        return;
-      }
-
-      event.preventDefault();
+    () => {
 
       unlockAudio();
 
-      if (!canPlay()) {
-        return;
-      }
-
-      game.gesture.active = true;
-      game.gesture.pointerId =
-        event.pointerId;
-
-      game.gesture.startX =
-        event.clientX;
-
-      game.gesture.startY =
-        event.clientY;
-
-      game.gesture.lastX =
-        event.clientX;
-
-      game.gesture.lastY =
-        event.clientY;
-
-      game.gesture.startTime =
-        performance.now();
-
-      game.gesture.moved = false;
-
-      try {
-        canvas.setPointerCapture(
-          event.pointerId
-        );
-      } catch {}
+      focusGameCanvas();
 
     },
     {
-      passive: false
-    }
-  );
-
-
-  canvas.addEventListener(
-    "pointermove",
-    event => {
-
-      if (
-        !game.gesture.active ||
-        event.pointerId !==
-        game.gesture.pointerId
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      if (!canPlay()) {
-        return;
-      }
-
-      const dx =
-        event.clientX -
-        game.gesture.lastX;
-
-      const dy =
-        event.clientY -
-        game.gesture.lastY;
-
-      const totalX =
-        event.clientX -
-        game.gesture.startX;
-
-      const totalY =
-        event.clientY -
-        game.gesture.startY;
-
-      const boardWidth =
-        canvas.getBoundingClientRect().width;
-
-      const step =
-        Math.max(
-          22,
-          boardWidth * 0.075
-        );
-
-      if (
-        Math.abs(totalX) >
-        Math.abs(totalY)
-      ) {
-
-        if (
-          Math.abs(dx) >= step
-        ) {
-
-          const count =
-            Math.floor(
-              Math.abs(dx) / step
-            );
-
-          const direction =
-            dx > 0 ? 1 : -1;
-
-          for (
-            let i = 0;
-            i < count;
-            i++
-          ) {
-
-            moveHorizontal(
-              direction
-            );
-
-          }
-
-          game.gesture.lastX =
-            event.clientX;
-
-          game.gesture.moved =
-            true;
-
-        }
-
-      } else if (
-        dy > 0 &&
-        Math.abs(dy) >= step
-      ) {
-
-        softDrop();
-
-        game.gesture.lastY =
-          event.clientY;
-
-        game.gesture.moved =
-          true;
-
-      }
-
-    },
-    {
-      passive: false
-    }
-  );
-
-
-  canvas.addEventListener(
-    "pointerup",
-    event => {
-
-      if (
-        event.pointerId !==
-        game.gesture.pointerId
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      if (
-        canPlay() &&
-        !game.gesture.moved
-      ) {
-
-        const duration =
-          performance.now() -
-          game.gesture.startTime;
-
-        const dx =
-          event.clientX -
-          game.gesture.startX;
-
-        const dy =
-          event.clientY -
-          game.gesture.startY;
-
-        /*
-         * Short tap:
-         * rotate clockwise.
-         */
-
-        if (
-          duration < 260 &&
-          Math.abs(dx) < 18 &&
-          Math.abs(dy) < 18
-        ) {
-
-          rotate(1);
-
-        }
-
-        /*
-         * Fast downward flick:
-         * hard drop.
-         */
-
-        else if (
-          dy > 90 &&
-          duration < 260
-        ) {
-
-          hardDrop();
-
-        }
-
-      }
-
-      resetGesture();
-
-    },
-    {
-      passive: false
-    }
-  );
-
-
-  canvas.addEventListener(
-    "pointercancel",
-    event => {
-
-      if (
-        event.pointerId ===
-        game.gesture.pointerId
-      ) {
-
-        resetGesture();
-
-      }
-
+      passive:
+        true
     }
   );
 
 }
 
 
-/* =========================================================
- * SETTINGS
- * ========================================================= */
+/*
+ * =========================================================
+ * SETTINGS EVENTS
+ * =========================================================
+ */
 
 function setupSettingsEvents() {
 
@@ -2850,6 +4178,7 @@ function setupSettingsEvents() {
         "sound",
         elements.soundToggle.checked
       );
+
 
       if (
         elements.soundToggle.checked
@@ -2872,11 +4201,13 @@ function setupSettingsEvents() {
         elements.musicToggle.checked
       );
 
+
       window.GomokuAudio
         ?.setMusicEnabled
         ?.(
           elements.musicToggle.checked
         );
+
 
       if (
         elements.musicToggle.checked
@@ -2948,63 +4279,125 @@ function setupSettingsEvents() {
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * NAVIGATION
- * ========================================================= */
+ * =========================================================
+ */
 
 function setupNavigation() {
 
   elements.startButton?.addEventListener(
     "click",
-    () => showScreen("setup")
+    () => {
+
+      showScreen(
+        "setup"
+      );
+
+    }
   );
 
 
   elements.recordsButton?.addEventListener(
     "click",
-    () => showScreen("records")
+    () => {
+
+      showScreen(
+        "records"
+      );
+
+    }
   );
 
 
   elements.settingsButton?.addEventListener(
     "click",
-    () => showScreen("settings")
+    () => {
+
+      showScreen(
+        "settings"
+      );
+
+    }
   );
 
 
   elements.beginButton?.addEventListener(
     "click",
-    () => startGame(selectedMode)
+    () => {
+
+      startGame(
+        selectedMode
+      );
+
+    }
   );
 
 
   elements.pauseButton?.addEventListener(
     "click",
-    pauseGame
+    () => {
+
+      pauseGame();
+
+    }
   );
 
 
   elements.resumeButton?.addEventListener(
     "click",
-    resumeGame
+    () => {
+
+      resumeGame();
+
+    }
   );
 
 
   elements.againButton?.addEventListener(
     "click",
-    () => startGame(game.mode)
+    () => {
+
+      startGame(
+        game.mode
+      );
+
+    }
   );
 
 
   elements.homeButton?.addEventListener(
     "click",
-    () => showScreen("home")
+    () => {
+
+      goHome();
+
+    }
   );
 
 
   elements.backButton?.addEventListener(
     "click",
-    () => showScreen("home")
+    () => {
+
+      if (
+        currentScreen ===
+        "game"
+      ) {
+
+        pauseGame();
+
+        return;
+
+      }
+
+
+      showScreen(
+        "home"
+      );
+
+    }
   );
 
 
@@ -3013,16 +4406,20 @@ function setupNavigation() {
     () => {
 
       if (
-        currentScreen === "game"
+        currentScreen ===
+        "game"
       ) {
 
         pauseGame();
 
-      } else {
-
-        showScreen("settings");
+        return;
 
       }
+
+
+      showScreen(
+        "settings"
+      );
 
     }
   );
@@ -3032,13 +4429,18 @@ function setupNavigation() {
     "click",
     () => {
 
-      clearRecords(data);
+      clearRecords(
+        data
+      );
+
 
       showToast(
         "紀錄已清除"
       );
 
+
       renderRecords();
+
       updateHome();
 
     }
@@ -3047,14 +4449,21 @@ function setupNavigation() {
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * AUDIO BRIDGE
- * ========================================================= */
+ * =========================================================
+ */
 
 function installAudioBridge() {
 
   window.KasaneStartGame =
-    () => unlockAudio();
+    () => {
+
+      unlockAudio();
+
+    };
+
 
   window.KasaneData =
     data;
@@ -3062,50 +4471,83 @@ function installAudioBridge() {
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * HAPTIC
- * ========================================================= */
+ * =========================================================
+ */
 
-function vibrate(duration) {
+function vibrate(
+  duration
+) {
 
   if (
-    data.settings.haptic === false
+    data.settings.haptic ===
+    false
   ) {
+
     return;
+
   }
+
 
   if (
     typeof navigator.vibrate !==
     "function"
   ) {
+
     return;
+
   }
 
+
   try {
-    navigator.vibrate(duration);
+
+    navigator.vibrate(
+      duration
+    );
+
   } catch {}
 
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * TOAST
- * ========================================================= */
+ * =========================================================
+ */
 
-function showToast(message) {
+let toastTimer =
+  null;
 
-  if (!elements.toast) {
+
+function showToast(
+  message
+) {
+
+  if (
+    !elements.toast
+  ) {
+
     return;
+
   }
+
 
   elements.toast.textContent =
     message;
+
 
   elements.toast.classList.add(
     "visible"
   );
 
-  clearTimeout(toastTimer);
+
+  clearTimeout(
+    toastTimer
+  );
+
 
   toastTimer =
     setTimeout(
@@ -3122,30 +4564,43 @@ function showToast(message) {
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * FOCUS
- * ========================================================= */
+ * =========================================================
+ */
 
 function focusGameCanvas() {
 
   if (!canvas) {
+
     return;
+
   }
 
+
   try {
+
     canvas.focus({
-      preventScroll: true
+      preventScroll:
+        true
     });
+
   } catch {}
 
 }
 
 
-/* =========================================================
+/*
+ * =========================================================
  * HELPERS
- * ========================================================= */
+ * =========================================================
+ */
 
-function matches(keys, value) {
+function matches(
+  keys,
+  value
+) {
 
   return (
     Array.isArray(keys) &&
@@ -3170,6 +4625,7 @@ function roundRect(
       width / 2,
       height / 2
     );
+
 
   context.beginPath();
 
@@ -3215,10 +4671,27 @@ function roundRect(
 }
 
 
-function lighten(hex, amount) {
+function lighten(
+  hex,
+  amount
+) {
 
   const value =
-    hex.replace("#", "");
+    String(hex)
+      .replace(
+        "#",
+        ""
+      );
+
+
+  if (
+    value.length !== 6
+  ) {
+
+    return hex;
+
+  }
+
 
   const r =
     parseInt(
@@ -3226,11 +4699,13 @@ function lighten(hex, amount) {
       16
     );
 
+
   const g =
     parseInt(
       value.slice(2, 4),
       16
     );
+
 
   const b =
     parseInt(
@@ -3238,110 +4713,117 @@ function lighten(hex, amount) {
       16
     );
 
+
   const nr =
     Math.min(
       255,
       Math.round(
         r +
-        (255 - r) *
+        (
+          255 -
+          r
+        ) *
         amount
       )
     );
+
 
   const ng =
     Math.min(
       255,
       Math.round(
         g +
-        (255 - g) *
+        (
+          255 -
+          g
+        ) *
         amount
       )
     );
+
 
   const nb =
     Math.min(
       255,
       Math.round(
         b +
-        (255 - b) *
+        (
+          255 -
+          b
+        ) *
         amount
       )
     );
+
 
   return `rgb(${nr}, ${ng}, ${nb})`;
 
 }
 
 
-function escapeHTML(value) {
+function escapeHTML(
+  value
+) {
 
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-
-}
-
-
-/* =========================================================
- * RESIZE
- * ========================================================= */
-
-function handleResize() {
-
-  if (
-    currentScreen === "game"
-  ) {
-
-    requestAnimationFrame(
-      () => {
-
-        resizeCanvas();
-        draw();
-
-      }
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
     );
 
-  }
-
 }
 
+
+/*
+ * =========================================================
+ * RESIZE
+ * =========================================================
+ */
 
 window.addEventListener(
   "resize",
-  handleResize,
-  {
-    passive: true
-  }
-);
-
-
-window.addEventListener(
-  "orientationchange",
   () => {
 
-    window.setTimeout(
-      handleResize,
-      100
-    );
+    if (
+      currentScreen ===
+      "game"
+    ) {
 
-    window.setTimeout(
-      handleResize,
-      400
-    );
+      resizeCanvas();
+
+      draw();
+
+    }
 
   },
   {
-    passive: true
+    passive:
+      true
   }
 );
 
 
-/* =========================================================
+/*
+ * =========================================================
  * VISIBILITY
- * ========================================================= */
+ * =========================================================
+ */
 
 document.addEventListener(
   "visibilitychange",
@@ -3362,9 +4844,32 @@ document.addEventListener(
 );
 
 
-/* =========================================================
+/*
+ * =========================================================
+ * PAGE HIDE / MOBILE SAFETY
+ * =========================================================
+ */
+
+window.addEventListener(
+  "pagehide",
+  () => {
+
+    game.softDropping =
+      false;
+
+    game.heldKeys.clear();
+
+    stopRepeat();
+
+  }
+);
+
+
+/*
+ * =========================================================
  * INITIALIZE
- * ========================================================= */
+ * =========================================================
+ */
 
 function init() {
 
@@ -3404,7 +4909,8 @@ if (
     "DOMContentLoaded",
     init,
     {
-      once: true
+      once:
+        true
     }
   );
 
