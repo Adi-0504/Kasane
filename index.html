@@ -5,17 +5,12 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
   >
 
   <meta
     name="theme-color"
-    content="#e8d5ad"
-  >
-
-  <meta
-    name="description"
-    content="A refined Gomoku-style Tetris game."
+    content="#427692"
   >
 
   <meta
@@ -25,10 +20,25 @@
 
   <meta
     name="apple-mobile-web-app-status-bar-style"
-    content="default"
+    content="black-translucent"
   >
 
-  <title>Tetris</title>
+  <meta
+    name="apple-mobile-web-app-title"
+    content="Kasane"
+  >
+
+  <title>Kasane</title>
+
+  <link
+    rel="manifest"
+    href="./manifest.json"
+  >
+
+  <link
+    rel="apple-touch-icon"
+    href="./icon-192.png"
+  >
 
   <link
     rel="stylesheet"
@@ -38,106 +48,94 @@
 
 <body>
 
-<div class="app-shell">
+<div id="app">
 
-  <header class="topbar">
+  <!-- HOME -->
 
-    <button
-      class="icon-button"
-      id="backButton"
-      type="button"
-      aria-label="返回"
-    >
-      <span>‹</span>
-    </button>
+  <main
+    id="homeScreen"
+    class="screen active"
+  >
 
-    <div class="brand">
+    <div class="home-shell">
 
-      <span
-        class="brand-mark"
-        aria-hidden="true"
-      ></span>
+      <header class="brand-header">
 
-      <span class="brand-name">
-        Tetris
-      </span>
-
-    </div>
-
-    <button
-      class="icon-button"
-      id="menuButton"
-      type="button"
-      aria-label="選單"
-    >
-      <span>•••</span>
-    </button>
-
-  </header>
-
-
-  <main>
-
-    <!-- HOME -->
-
-    <section
-      class="screen active"
-      id="homeScreen"
-    >
-
-      <div class="home-content">
-
-        <div class="hero-tetris">
-
-          <div class="hero-block block-i"></div>
-          <div class="hero-block block-t"></div>
-          <div class="hero-block block-l"></div>
-
+        <div class="brand-mark">
+          K
         </div>
 
-        <h1>
-          Tetris
-        </h1>
+        <div class="brand-copy">
+          <span class="brand-name">
+            KASANE
+          </span>
 
-        <p class="subtitle">
-          一格一格，慢慢堆成自己的節奏。
-        </p>
+          <span class="brand-subtitle">
+            TETRIS
+          </span>
+        </div>
 
-        <div class="home-actions">
+      </header>
+
+
+      <section class="hero-card">
+
+        <div class="hero-glow"></div>
+
+        <div class="hero-content">
+
+          <span
+            class="eyebrow"
+            data-i18n="home.eyebrow"
+          >
+            STACK WITH FLOW
+          </span>
+
+          <h1
+            data-i18n="home.title"
+          >
+            一層一層，
+            <br>
+            堆出節奏。
+          </h1>
+
+          <p
+            data-i18n="home.description"
+          >
+            簡單開始，越玩越順。
+            找到屬於你的落塊節奏。
+          </p>
 
           <button
-            class="primary-button"
             id="startButton"
+            class="primary-button"
             type="button"
           >
-            開始遊戲
-          </button>
 
-          <button
-            class="secondary-button"
-            id="recordsButton"
-            type="button"
-          >
-            紀錄
-          </button>
+            <span data-i18n="home.play">
+              開始遊戲
+            </span>
 
-          <button
-            class="secondary-button"
-            id="settingsButton"
-            type="button"
-          >
-            設定
+            <span class="button-arrow">
+              →
+            </span>
+
           </button>
 
         </div>
 
-        <div
-          class="home-status"
-          id="bestCard"
-        >
+      </section>
 
-          <span class="status-label">
-            最高分
+
+      <section class="quick-stats">
+
+        <div class="stat-card">
+
+          <span
+            class="stat-label"
+            data-i18n="stats.best"
+          >
+            BEST
           </span>
 
           <strong id="homeBestScore">
@@ -146,550 +144,898 @@
 
         </div>
 
-      </div>
+        <div class="stat-card">
 
-    </section>
-
-
-    <!-- SETUP -->
-
-    <section
-      class="screen"
-      id="setupScreen"
-    >
-
-      <div class="screen-content">
-
-        <h2>
-          遊戲模式
-        </h2>
-
-        <div class="mode-grid">
-
-          <button
-            class="mode-card selected"
-            data-mode="marathon"
-            type="button"
+          <span
+            class="stat-label"
+            data-i18n="stats.games"
           >
-            <strong>Marathon</strong>
-            <span>一路升級，挑戰極限</span>
-          </button>
+            GAMES
+          </span>
 
-          <button
-            class="mode-card"
-            data-mode="sprint"
-            type="button"
-          >
-            <strong>Sprint</strong>
-            <span>40 行速度挑戰</span>
-          </button>
-
-          <button
-            class="mode-card"
-            data-mode="ultra"
-            type="button"
-          >
-            <strong>Ultra</strong>
-            <span>120 秒最高分</span>
-          </button>
-
-          <button
-            class="mode-card"
-            data-mode="zen"
-            type="button"
-          >
-            <strong>Zen</strong>
-            <span>沒有壓力，慢慢玩</span>
-          </button>
+          <strong id="gamesStat">
+            0
+          </strong>
 
         </div>
 
+      </section>
+
+
+      <section class="home-actions">
+
         <button
-          class="primary-button full-button"
-          id="beginButton"
+          id="recordsButton"
+          class="secondary-button"
           type="button"
         >
-          開始
+          <span data-i18n="home.records">
+            紀錄
+          </span>
         </button>
+
+        <button
+          id="settingsButton"
+          class="secondary-button"
+          type="button"
+        >
+          <span data-i18n="home.settings">
+            設定
+          </span>
+        </button>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <!-- SETUP -->
+
+  <main
+    id="setupScreen"
+    class="screen"
+  >
+
+    <div class="page-shell">
+
+      <header class="page-header">
+
+        <button
+          id="backButton"
+          class="icon-button"
+          type="button"
+          aria-label="Back"
+        >
+          ←
+        </button>
+
+        <div>
+
+          <span
+            class="page-kicker"
+            data-i18n="setup.kicker"
+          >
+            GAME MODE
+          </span>
+
+          <h2
+            data-i18n="setup.title"
+          >
+            選擇模式
+          </h2>
+
+        </div>
+
+      </header>
+
+
+      <section class="mode-list">
+
+        <button
+          class="mode-card selected"
+          data-mode="marathon"
+          type="button"
+        >
+
+          <div class="mode-number">
+            01
+          </div>
+
+          <div class="mode-copy">
+
+            <strong data-i18n="modes.marathon">
+              MARATHON
+            </strong>
+
+            <span data-i18n="modes.marathonDescription">
+              慢慢變快，挑戰自己的最高分
+            </span>
+
+          </div>
+
+          <span class="mode-check">
+            ✓
+          </span>
+
+        </button>
+
+
+        <button
+          class="mode-card"
+          data-mode="sprint"
+          type="button"
+        >
+
+          <div class="mode-number">
+            02
+          </div>
+
+          <div class="mode-copy">
+
+            <strong data-i18n="modes.sprint">
+              SPRINT
+            </strong>
+
+            <span data-i18n="modes.sprintDescription">
+              40 行，看你能多快完成
+            </span>
+
+          </div>
+
+          <span class="mode-check">
+            ✓
+          </span>
+
+        </button>
+
+
+        <button
+          class="mode-card"
+          data-mode="ultra"
+          type="button"
+        >
+
+          <div class="mode-number">
+            03
+          </div>
+
+          <div class="mode-copy">
+
+            <strong data-i18n="modes.ultra">
+              ULTRA
+            </strong>
+
+            <span data-i18n="modes.ultraDescription">
+              120 秒，分數越高越好
+            </span>
+
+          </div>
+
+          <span class="mode-check">
+            ✓
+          </span>
+
+        </button>
+
+      </section>
+
+
+      <button
+        id="beginButton"
+        class="primary-button setup-start"
+        type="button"
+      >
+
+        <span data-i18n="setup.begin">
+          開始
+        </span>
+
+        <span>
+          →
+        </span>
+
+      </button>
+
+    </div>
+
+  </main>
+
+
+  <!-- GAME -->
+
+  <main
+    id="gameScreen"
+    class="screen game-screen"
+  >
+
+    <header class="game-header">
+
+      <div class="game-header-left">
+
+        <button
+          id="menuButton"
+          class="icon-button game-icon-button"
+          type="button"
+          aria-label="Menu"
+        >
+          ≡
+        </button>
+
+        <div class="game-mode-copy">
+
+          <span id="modeLabel">
+            MARATHON
+          </span>
+
+          <small>
+            <span data-i18n="game.level">
+              LEVEL
+            </span>
+
+            <span id="levelLabel">
+              1
+            </span>
+          </small>
+
+        </div>
 
       </div>
 
-    </section>
+
+      <button
+        id="pauseButton"
+        class="pause-button"
+        type="button"
+      >
+        <span class="pause-symbol">
+          ||
+        </span>
+
+        <span data-i18n="game.pause">
+          暫停
+        </span>
+      </button>
+
+    </header>
 
 
-    <!-- GAME -->
+    <section class="game-layout">
 
-    <section
-      class="screen game-screen"
-      id="gameScreen"
-    >
+      <aside class="game-side left-side">
 
-      <div class="game-layout">
+        <div class="preview-card">
 
-        <aside class="side-panel left-panel">
+          <span
+            class="preview-title"
+            data-i18n="game.hold"
+          >
+            HOLD
+          </span>
 
-          <div class="panel-card hold-card">
+          <canvas
+            id="holdCanvas"
+            width="120"
+            height="90"
+          ></canvas>
 
-            <span class="panel-label">
-              HOLD
-            </span>
-
-            <canvas
-              id="holdCanvas"
-              width="140"
-              height="100"
-            ></canvas>
-
-          </div>
-
-          <div class="panel-card">
-
-            <span class="panel-label">
-              模式
-            </span>
-
-            <strong id="modeLabel">
-              Marathon
-            </strong>
-
-          </div>
-
-          <div class="panel-card">
-
-            <span class="panel-label">
-              等級
-            </span>
-
-            <strong id="levelLabel">
-              1
-            </strong>
-
-          </div>
-
-        </aside>
+        </div>
 
 
-        <div class="board-column">
+        <div class="score-card">
 
-          <div class="mobile-status">
+          <span
+            class="score-label"
+            data-i18n="game.score"
+          >
+            SCORE
+          </span>
 
-            <div>
-              <span>分數</span>
-              <strong id="scoreLabelMobile">0</strong>
-            </div>
+          <strong id="scoreLabel">
+            0
+          </strong>
 
-            <div>
-              <span>行數</span>
-              <strong id="linesLabelMobile">0</strong>
-            </div>
+        </div>
 
-          </div>
+      </aside>
 
 
-          <div class="board-frame">
+      <section class="board-stage">
 
-            <canvas
-              id="gameCanvas"
-              aria-label="Tetris game board"
-              tabindex="0"
-            ></canvas>
+        <div class="board-shell">
 
-            <div
-              class="pause-overlay"
-              id="pauseOverlay"
-              hidden
-            >
-              <strong>
-                暫停中
-              </strong>
+          <canvas
+            id="gameCanvas"
+            tabindex="0"
+            aria-label="Tetris board"
+          ></canvas>
+
+          <div
+            id="pauseOverlay"
+            class="pause-overlay"
+            hidden
+          >
+
+            <div class="pause-panel">
+
+              <span
+                class="page-kicker"
+                data-i18n="game.paused"
+              >
+                PAUSED
+              </span>
+
+              <h2 data-i18n="game.pausedTitle">
+                休息一下
+              </h2>
 
               <button
-                class="primary-button"
                 id="resumeButton"
+                class="primary-button"
                 type="button"
               >
-                繼續
+                <span data-i18n="game.resume">
+                  繼續
+                </span>
               </button>
+
             </div>
 
           </div>
 
 
-          <div class="mobile-controls">
+          <div
+            id="touchHint"
+            class="touch-hint"
+          >
 
-            <button
-              class="control-button"
-              data-action="hold"
-              type="button"
+            <span
+              class="touch-icon"
             >
-              HOLD
-            </button>
-
-            <button
-              class="control-button"
-              data-action="left"
-              type="button"
-            >
-              ←
-            </button>
-
-            <button
-              class="control-button"
-              data-action="down"
-              type="button"
-            >
-              ↓
-            </button>
-
-            <button
-              class="control-button"
-              data-action="right"
-              type="button"
-            >
-              →
-            </button>
-
-            <button
-              class="control-button"
-              data-action="rotateCCW"
-              type="button"
-            >
-              ↺
-            </button>
-
-            <button
-              class="control-button"
-              data-action="rotate"
-              type="button"
-            >
-              ↻
-            </button>
-
-            <button
-              class="control-button hard-drop"
-              data-action="drop"
-              type="button"
-            >
-              DROP
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <aside class="side-panel right-panel">
-
-          <div class="panel-card">
-
-            <span class="panel-label">
-              NEXT
+              ↕
             </span>
 
-            <div class="next-list">
-
-              <canvas width="120" height="70"></canvas>
-              <canvas width="120" height="70"></canvas>
-              <canvas width="120" height="70"></canvas>
-              <canvas width="120" height="70"></canvas>
-              <canvas width="120" height="70"></canvas>
-
-            </div>
+            <span
+              data-i18n="game.touchHint"
+            >
+              左右拖曳移動・上滑落下・點擊旋轉
+            </span>
 
           </div>
 
-          <div class="panel-card score-card">
+        </div>
 
-            <div>
-              <span>分數</span>
-              <strong id="scoreLabel">0</strong>
-            </div>
+      </section>
 
-            <div>
-              <span>行數</span>
-              <strong id="linesLabel">0</strong>
-            </div>
 
-            <div>
-              <span>COMBO</span>
-              <strong id="comboLabel">0</strong>
-            </div>
+      <aside class="game-side right-side">
 
-            <div>
-              <span>B2B</span>
-              <strong id="b2bLabel">0</strong>
-            </div>
+        <div class="preview-card next-card">
 
-          </div>
-
-          <button
-            class="game-menu-button"
-            id="pauseButton"
-            type="button"
+          <span
+            class="preview-title"
+            data-i18n="game.next"
           >
-            暫停
-          </button>
-
-        </aside>
-
-      </div>
-
-    </section>
-
-
-    <!-- RESULT -->
-
-    <section
-      class="screen"
-      id="resultScreen"
-    >
-
-      <div class="result-content">
-
-        <div class="result-mark">
-          <span id="resultMarkText">
-            GAME
+            NEXT
           </span>
-        </div>
 
-        <p
-          class="result-kicker"
-          id="resultKicker"
-        >
-          GAME COMPLETE
-        </p>
+          <div class="next-list">
 
-        <h2 id="resultTitle">
-          遊戲結束
-        </h2>
+            <canvas
+              width="120"
+              height="70"
+            ></canvas>
 
-        <p id="resultDescription">
-          這次的棋局結束了。
-        </p>
+            <canvas
+              width="120"
+              height="70"
+            ></canvas>
 
-        <div class="result-stats">
+            <canvas
+              width="120"
+              height="70"
+            ></canvas>
 
-          <div>
-            <span>分數</span>
-            <strong id="resultScore">0</strong>
-          </div>
-
-          <div>
-            <span>行數</span>
-            <strong id="resultLines">0</strong>
-          </div>
-
-          <div>
-            <span>等級</span>
-            <strong id="resultLevel">1</strong>
           </div>
 
         </div>
 
-        <div class="result-actions">
 
-          <button
-            class="primary-button"
-            id="againButton"
-            type="button"
-          >
-            再來一局
-          </button>
+        <div class="mini-stats">
 
-          <button
-            class="secondary-button"
-            id="homeButton"
-            type="button"
-          >
-            返回首頁
-          </button>
+          <div>
+
+            <span data-i18n="game.lines">
+              LINES
+            </span>
+
+            <strong id="linesLabel">
+              0
+            </strong>
+
+          </div>
+
+          <div>
+
+            <span data-i18n="game.combo">
+              COMBO
+            </span>
+
+            <strong id="comboLabel">
+              0
+            </strong>
+
+          </div>
+
+          <div>
+
+            <span>
+              B2B
+            </span>
+
+            <strong id="b2bLabel">
+              0
+            </strong>
+
+          </div>
 
         </div>
 
-      </div>
+      </aside>
 
     </section>
 
 
-    <!-- RECORDS -->
+    <footer class="mobile-score-bar">
 
-    <section
-      class="screen"
-      id="recordsScreen"
-    >
+      <div>
 
-      <div class="screen-content">
+        <span data-i18n="game.score">
+          SCORE
+        </span>
 
-        <h2>
-          紀錄
-        </h2>
+        <strong id="scoreLabelMobile">
+          0
+        </strong>
 
-        <div class="stats-grid">
+      </div>
 
-          <div class="stat-card">
-            <span>遊戲</span>
-            <strong id="gamesStat">0</strong>
-          </div>
+      <div>
 
-          <div class="stat-card">
-            <span>最高分</span>
-            <strong id="bestStat">0</strong>
-          </div>
+        <span data-i18n="game.lines">
+          LINES
+        </span>
 
-          <div class="stat-card">
-            <span>最多行</span>
-            <strong id="linesStat">0</strong>
-          </div>
+        <strong id="linesLabelMobile">
+          0
+        </strong>
 
-          <div class="stat-card">
-            <span>最佳 Sprint</span>
-            <strong id="sprintStat">—</strong>
-          </div>
+      </div>
+
+    </footer>
+
+  </main>
+
+
+  <!-- RESULT -->
+
+  <main
+    id="resultScreen"
+    class="screen"
+  >
+
+    <div class="result-shell">
+
+      <div class="result-mark">
+
+        <span id="resultMarkText">
+          GAME
+        </span>
+
+      </div>
+
+
+      <span
+        id="resultKicker"
+        class="page-kicker"
+      >
+        GAME OVER
+      </span>
+
+
+      <h1 id="resultTitle">
+        這局結束了
+      </h1>
+
+
+      <p id="resultDescription">
+        0 行 · 0 分
+      </p>
+
+
+      <section class="result-stats">
+
+        <div>
+
+          <span data-i18n="result.score">
+            SCORE
+          </span>
+
+          <strong id="resultScore">
+            0
+          </strong>
 
         </div>
 
-        <div
-          class="record-list"
-          id="recordList"
-        ></div>
+        <div>
+
+          <span data-i18n="result.lines">
+            LINES
+          </span>
+
+          <strong id="resultLines">
+            0
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span data-i18n="result.level">
+            LEVEL
+          </span>
+
+          <strong id="resultLevel">
+            1
+          </strong>
+
+        </div>
+
+      </section>
+
+
+      <div class="result-actions">
 
         <button
-          class="secondary-button full-button"
-          id="clearRecordsButton"
+          id="againButton"
+          class="primary-button"
           type="button"
         >
-          清除紀錄
+          <span data-i18n="result.again">
+            再玩一次
+          </span>
+
+          <span>
+            →
+          </span>
+        </button>
+
+        <button
+          id="homeButton"
+          class="secondary-button"
+          type="button"
+        >
+          <span data-i18n="result.home">
+            回首頁
+          </span>
         </button>
 
       </div>
 
-    </section>
+    </div>
+
+  </main>
 
 
-    <!-- SETTINGS -->
+  <!-- RECORDS -->
 
-    <section
-      class="screen"
-      id="settingsScreen"
-    >
+  <main
+    id="recordsScreen"
+    class="screen"
+  >
 
-      <div class="screen-content">
+    <div class="page-shell">
 
-        <h2>
-          設定
-        </h2>
+      <header class="page-header">
 
-        <div class="settings-list">
+        <button
+          id="backButtonRecords"
+          class="icon-button"
+          type="button"
+        >
+          ←
+        </button>
 
-          <label class="setting-row">
+        <div>
 
-            <span>
-              <strong>音效</strong>
-              <small>UISFX 遊戲音效</small>
-            </span>
+          <span
+            class="page-kicker"
+            data-i18n="records.kicker"
+          >
+            HISTORY
+          </span>
 
-            <input
-              id="soundToggle"
-              type="checkbox"
-              checked
-            >
-
-          </label>
-
-
-          <label class="setting-row">
-
-            <span>
-              <strong>背景音樂</strong>
-              <small>和風環境循環</small>
-            </span>
-
-            <input
-              id="musicToggle"
-              type="checkbox"
-              checked
-            >
-
-          </label>
-
-
-          <label class="setting-row">
-
-            <span>
-              <strong>Ghost</strong>
-              <small>顯示落點預覽</small>
-            </span>
-
-            <input
-              id="ghostToggle"
-              type="checkbox"
-              checked
-            >
-
-          </label>
-
-
-          <label class="setting-row">
-
-            <span>
-              <strong>震動</strong>
-              <small>支援裝置震動回饋</small>
-            </span>
-
-            <input
-              id="hapticToggle"
-              type="checkbox"
-              checked
-            >
-
-          </label>
-
-
-          <label class="setting-row">
-
-            <span>
-              <strong>動畫</strong>
-              <small>方塊與消行動畫</small>
-            </span>
-
-            <input
-              id="motionToggle"
-              type="checkbox"
-              checked
-            >
-
-          </label>
-
-
-          <label class="setting-row">
-
-            <span>
-              <strong>外觀</strong>
-              <small>系統 / 淺色 / 深色</small>
-            </span>
-
-            <select id="themeSelect">
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-
-          </label>
+          <h2 data-i18n="records.title">
+            遊戲紀錄
+          </h2>
 
         </div>
 
-      </div>
+      </header>
 
-    </section>
+
+      <section class="record-summary">
+
+        <div>
+          <span data-i18n="stats.games">
+            GAMES
+          </span>
+
+          <strong id="gamesStat">
+            0
+          </strong>
+        </div>
+
+        <div>
+          <span data-i18n="stats.best">
+            BEST
+          </span>
+
+          <strong id="bestStat">
+            0
+          </strong>
+        </div>
+
+        <div>
+          <span data-i18n="stats.lines">
+            LINES
+          </span>
+
+          <strong id="linesStat">
+            0
+          </strong>
+        </div>
+
+        <div>
+          <span>
+            SPRINT
+          </span>
+
+          <strong id="sprintStat">
+            --
+          </strong>
+        </div>
+
+      </section>
+
+
+      <section
+        id="recordList"
+        class="record-list"
+      ></section>
+
+
+      <button
+        id="clearRecordsButton"
+        class="danger-button"
+        type="button"
+      >
+        <span data-i18n="records.clear">
+          清除紀錄
+        </span>
+      </button>
+
+    </div>
+
+  </main>
+
+
+  <!-- SETTINGS -->
+
+  <main
+    id="settingsScreen"
+    class="screen"
+  >
+
+    <div class="page-shell">
+
+      <header class="page-header">
+
+        <button
+          id="backButtonSettings"
+          class="icon-button"
+          type="button"
+        >
+          ←
+        </button>
+
+        <div>
+
+          <span
+            class="page-kicker"
+            data-i18n="settings.kicker"
+          >
+            PREFERENCES
+          </span>
+
+          <h2 data-i18n="settings.title">
+            設定
+          </h2>
+
+        </div>
+
+      </header>
+
+
+      <section class="settings-list">
+
+        <label class="setting-row">
+
+          <span>
+
+            <strong data-i18n="settings.sound">
+              音效
+            </strong>
+
+            <small data-i18n="settings.soundDescription">
+              遊戲操作音效
+            </small>
+
+          </span>
+
+          <input
+            id="soundToggle"
+            type="checkbox"
+            checked
+          >
+
+        </label>
+
+
+        <label class="setting-row">
+
+          <span>
+
+            <strong data-i18n="settings.music">
+              音樂
+            </strong>
+
+            <small data-i18n="settings.musicDescription">
+              背景音樂
+            </small>
+
+          </span>
+
+          <input
+            id="musicToggle"
+            type="checkbox"
+            checked
+          >
+
+        </label>
+
+
+        <label class="setting-row">
+
+          <span>
+
+            <strong data-i18n="settings.ghost">
+              Ghost
+            </strong>
+
+            <small data-i18n="settings.ghostDescription">
+              顯示落點提示
+            </small>
+
+          </span>
+
+          <input
+            id="ghostToggle"
+            type="checkbox"
+            checked
+          >
+
+        </label>
+
+
+        <label class="setting-row">
+
+          <span>
+
+            <strong data-i18n="settings.haptic">
+              觸覺回饋
+            </strong>
+
+            <small data-i18n="settings.hapticDescription">
+              操作時提供輕微震動
+            </small>
+
+          </span>
+
+          <input
+            id="hapticToggle"
+            type="checkbox"
+            checked
+          >
+
+        </label>
+
+
+        <label class="setting-row">
+
+          <span>
+
+            <strong data-i18n="settings.motion">
+              動畫
+            </strong>
+
+            <small data-i18n="settings.motionDescription">
+              啟用介面動態效果
+            </small>
+
+          </span>
+
+          <input
+            id="motionToggle"
+            type="checkbox"
+            checked
+          >
+
+        </label>
+
+
+        <label class="setting-row select-row">
+
+          <span>
+
+            <strong data-i18n="settings.theme">
+              Theme
+            </strong>
+
+            <small data-i18n="settings.themeDescription">
+              選擇顯示主題
+            </small>
+
+          </span>
+
+          <select id="themeSelect">
+
+            <option
+              value="system"
+              data-i18n="settings.system"
+            >
+              系統
+            </option>
+
+            <option
+              value="light"
+              data-i18n="settings.light"
+            >
+              淺色
+            </option>
+
+            <option
+              value="dark"
+              data-i18n="settings.dark"
+            >
+              深色
+            </option>
+
+          </select>
+
+        </label>
+
+      </section>
+
+    </div>
 
   </main>
 
 
   <div
-    class="toast"
     id="toast"
-    role="status"
-    aria-live="polite"
+    class="toast"
   ></div>
 
 </div>
