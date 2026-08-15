@@ -1,34 +1,5 @@
 "use strict";
 
-/*
- * =========================================================
- * KASANE TETRIS
- * =========================================================
- *
- * Main game controller
- *
- * - Responsive canvas rendering
- * - Independent gravity timer
- * - 7-bag randomizer
- * - Hold
- * - Next queue
- * - Ghost piece
- * - SRS rotation
- * - DAS / ARR touch movement
- * - Keyboard controls
- * - Soft drop
- * - Hard drop
- * - Lock delay
- * - T-Spin
- * - Combo
- * - Back-to-Back
- * - Perfect Clear
- * - Marathon / Sprint / Ultra / Zen
- * - UISFX / BGM integration
- *
- * =========================================================
- */
-
 import {
   CONFIG,
   COLORS,
@@ -76,214 +47,699 @@ import {
 } from "./audio.js";
 
 
-/*
- * =========================================================
- * DATA
- * =========================================================
- */
+/* =========================================================
+   DATA
+========================================================= */
 
 const data = loadData();
 
 window.KasaneData = data;
 
-window.KasaneSaveSettings = settings => {
 
-  data.settings = {
-    ...data.settings,
-    ...settings
+/* =========================================================
+   I18N
+========================================================= */
+
+const LANGUAGES = {
+  "zh-TW": {
+    title: "Tetris",
+    subtitle: "一格一格，慢慢堆成自己的節奏。",
+    start: "開始遊戲",
+    records: "紀錄",
+    settings: "設定",
+    modes: "遊戲模式",
+    marathon: "Marathon",
+    marathonDesc: "一路升級，挑戰極限",
+    sprint: "Sprint",
+    sprintDesc: "40 行速度挑戰",
+    ultra: "Ultra",
+    ultraDesc: "120 秒最高分",
+    zen: "Zen",
+    zenDesc: "沒有壓力，慢慢玩",
+    begin: "開始",
+    hold: "HOLD",
+    next: "NEXT",
+    mode: "模式",
+    level: "等級",
+    score: "分數",
+    lines: "行數",
+    combo: "COMBO",
+    b2b: "B2B",
+    pause: "暫停",
+    paused: "暫停中",
+    resume: "繼續",
+    clear: "CLEAR",
+    game: "GAME",
+    gameComplete: "GAME COMPLETE",
+    gameOver: "GAME OVER",
+    complete: "完成得很好",
+    gameEnded: "這次的棋局結束了。",
+    sprintComplete: "40 行完成",
+    timeUp: "時間到",
+    playAgain: "再來一局",
+    home: "返回首頁",
+    games: "遊戲",
+    bestScore: "最高分",
+    bestLines: "最多行",
+    bestSprint: "最佳 Sprint",
+    noRecords: "還沒有棋局紀錄。",
+    clearRecords: "清除紀錄",
+    sound: "音效",
+    soundDesc: "UISFX 遊戲音效",
+    music: "背景音樂",
+    musicDesc: "CC0 背景音樂",
+    ghost: "Ghost",
+    ghostDesc: "顯示落點預覽",
+    haptic: "震動",
+    hapticDesc: "支援裝置震動回饋",
+    motion: "動畫",
+    motionDesc: "方塊與消行動畫",
+    appearance: "外觀",
+    appearanceDesc: "系統 / 淺色 / 深色",
+    system: "System",
+    light: "Light",
+    dark: "Dark",
+    back: "返回",
+    menu: "選單",
+    perfectClear: "Perfect Clear",
+    tetris: "TETRIS",
+    cleared: "CLEAR",
+    recordsCleared: "紀錄已清除",
+    gestureHint: "滑動移動 · 點擊旋轉 · 上滑 HOLD · 下滑 DROP"
+  },
+
+  "zh-CN": {
+    title: "Tetris",
+    subtitle: "一格一格，慢慢堆成自己的节奏。",
+    start: "开始游戏",
+    records: "记录",
+    settings: "设置",
+    modes: "游戏模式",
+    marathon: "Marathon",
+    marathonDesc: "一路升级，挑战极限",
+    sprint: "Sprint",
+    sprintDesc: "40 行速度挑战",
+    ultra: "Ultra",
+    ultraDesc: "120 秒最高分",
+    zen: "Zen",
+    zenDesc: "没有压力，慢慢玩",
+    begin: "开始",
+    hold: "HOLD",
+    next: "NEXT",
+    mode: "模式",
+    level: "等级",
+    score: "分数",
+    lines: "行数",
+    combo: "COMBO",
+    b2b: "B2B",
+    pause: "暂停",
+    paused: "暂停中",
+    resume: "继续",
+    clear: "CLEAR",
+    game: "GAME",
+    gameComplete: "GAME COMPLETE",
+    gameOver: "GAME OVER",
+    complete: "完成得很好",
+    gameEnded: "这次的棋局结束了。",
+    sprintComplete: "40 行完成",
+    timeUp: "时间到",
+    playAgain: "再来一局",
+    home: "返回首页",
+    games: "游戏",
+    bestScore: "最高分",
+    bestLines: "最多行",
+    bestSprint: "最佳 Sprint",
+    noRecords: "还没有棋局记录。",
+    clearRecords: "清除记录",
+    sound: "音效",
+    soundDesc: "UISFX 游戏音效",
+    music: "背景音乐",
+    musicDesc: "CC0 背景音乐",
+    ghost: "Ghost",
+    ghostDesc: "显示落点预览",
+    haptic: "震动",
+    hapticDesc: "支持设备震动反馈",
+    motion: "动画",
+    motionDesc: "方块与消行动画",
+    appearance: "外观",
+    appearanceDesc: "系统 / 浅色 / 深色",
+    system: "System",
+    light: "Light",
+    dark: "Dark",
+    back: "返回",
+    menu: "菜单",
+    perfectClear: "Perfect Clear",
+    tetris: "TETRIS",
+    cleared: "CLEAR",
+    recordsCleared: "记录已清除",
+    gestureHint: "滑动移动 · 点击旋转 · 上滑 HOLD · 下滑 DROP"
+  },
+
+  en: {
+    title: "Tetris",
+    subtitle: "Stack one piece at a time. Find your rhythm.",
+    start: "Start Game",
+    records: "Records",
+    settings: "Settings",
+    modes: "Game Mode",
+    marathon: "Marathon",
+    marathonDesc: "Level up and push your limit",
+    sprint: "Sprint",
+    sprintDesc: "Clear 40 lines as fast as possible",
+    ultra: "Ultra",
+    ultraDesc: "Highest score in 120 seconds",
+    zen: "Zen",
+    zenDesc: "No pressure. Just play.",
+    begin: "Start",
+    hold: "HOLD",
+    next: "NEXT",
+    mode: "MODE",
+    level: "LEVEL",
+    score: "SCORE",
+    lines: "LINES",
+    combo: "COMBO",
+    b2b: "B2B",
+    pause: "Pause",
+    paused: "Paused",
+    resume: "Resume",
+    clear: "CLEAR",
+    game: "GAME",
+    gameComplete: "GAME COMPLETE",
+    gameOver: "GAME OVER",
+    complete: "Nice run",
+    gameEnded: "This game has ended.",
+    sprintComplete: "40 Lines Complete",
+    timeUp: "Time's Up",
+    playAgain: "Play Again",
+    home: "Home",
+    games: "Games",
+    bestScore: "Best Score",
+    bestLines: "Best Lines",
+    bestSprint: "Best Sprint",
+    noRecords: "No games recorded yet.",
+    clearRecords: "Clear Records",
+    sound: "Sound",
+    soundDesc: "UISFX game sounds",
+    music: "Music",
+    musicDesc: "CC0 background music",
+    ghost: "Ghost",
+    ghostDesc: "Show landing preview",
+    haptic: "Haptics",
+    hapticDesc: "Device vibration feedback",
+    motion: "Motion",
+    motionDesc: "Piece and line-clear animations",
+    appearance: "Appearance",
+    appearanceDesc: "System / Light / Dark",
+    system: "System",
+    light: "Light",
+    dark: "Dark",
+    back: "Back",
+    menu: "Menu",
+    perfectClear: "Perfect Clear",
+    tetris: "TETRIS",
+    cleared: "CLEAR",
+    recordsCleared: "Records cleared",
+    gestureHint: "Swipe to move · Tap to rotate · Swipe up for HOLD · Swipe down to DROP"
+  },
+
+  ja: {
+    title: "Tetris",
+    subtitle: "ひとつずつ積んで、自分のリズムで。",
+    start: "ゲーム開始",
+    records: "記録",
+    settings: "設定",
+    modes: "ゲームモード",
+    marathon: "Marathon",
+    marathonDesc: "レベルを上げて限界に挑戦",
+    sprint: "Sprint",
+    sprintDesc: "40ラインをできるだけ速く",
+    ultra: "Ultra",
+    ultraDesc: "120秒で最高スコア",
+    zen: "Zen",
+    zenDesc: "ゆっくり遊ぼう。",
+    begin: "開始",
+    hold: "HOLD",
+    next: "NEXT",
+    mode: "モード",
+    level: "レベル",
+    score: "スコア",
+    lines: "ライン",
+    combo: "COMBO",
+    b2b: "B2B",
+    pause: "一時停止",
+    paused: "一時停止中",
+    resume: "再開",
+    clear: "CLEAR",
+    game: "GAME",
+    gameComplete: "GAME COMPLETE",
+    gameOver: "GAME OVER",
+    complete: "いいプレイでした",
+    gameEnded: "ゲーム終了です。",
+    sprintComplete: "40ラインクリア",
+    timeUp: "時間切れ",
+    playAgain: "もう一度",
+    home: "ホーム",
+    games: "ゲーム数",
+    bestScore: "最高スコア",
+    bestLines: "最多ライン",
+    bestSprint: "ベストSprint",
+    noRecords: "まだ記録がありません。",
+    clearRecords: "記録を消去",
+    sound: "サウンド",
+    soundDesc: "UISFXゲームサウンド",
+    music: "BGM",
+    musicDesc: "CC0バックグラウンドミュージック",
+    ghost: "Ghost",
+    ghostDesc: "落下位置を表示",
+    haptic: "振動",
+    hapticDesc: "デバイスの振動",
+    motion: "アニメーション",
+    motionDesc: "ブロックとライン消去",
+    appearance: "外観",
+    appearanceDesc: "システム / ライト / ダーク",
+    system: "System",
+    light: "Light",
+    dark: "Dark",
+    back: "戻る",
+    menu: "メニュー",
+    perfectClear: "Perfect Clear",
+    tetris: "TETRIS",
+    cleared: "CLEAR",
+    recordsCleared: "記録を消去しました",
+    gestureHint: "スワイプで移動 · タップで回転 · 上スワイプでHOLD · 下スワイプでDROP"
+  },
+
+  ko: {
+    title: "Tetris",
+    subtitle: "한 칸씩 쌓으며 나만의 리듬을 찾아보세요.",
+    start: "게임 시작",
+    records: "기록",
+    settings: "설정",
+    modes: "게임 모드",
+    marathon: "Marathon",
+    marathonDesc: "레벨을 올리고 한계에 도전",
+    sprint: "Sprint",
+    sprintDesc: "40줄을 최대한 빠르게",
+    ultra: "Ultra",
+    ultraDesc: "120초 동안 최고 점수",
+    zen: "Zen",
+    zenDesc: "부담 없이 천천히",
+    begin: "시작",
+    hold: "HOLD",
+    next: "NEXT",
+    mode: "모드",
+    level: "레벨",
+    score: "점수",
+    lines: "줄",
+    combo: "COMBO",
+    b2b: "B2B",
+    pause: "일시정지",
+    paused: "일시정지 중",
+    resume: "계속",
+    clear: "CLEAR",
+    game: "GAME",
+    gameComplete: "GAME COMPLETE",
+    gameOver: "GAME OVER",
+    complete: "멋진 플레이",
+    gameEnded: "게임이 끝났습니다.",
+    sprintComplete: "40줄 완료",
+    timeUp: "시간 종료",
+    playAgain: "다시 하기",
+    home: "홈",
+    games: "게임",
+    bestScore: "최고 점수",
+    bestLines: "최고 줄",
+    bestSprint: "최고 Sprint",
+    noRecords: "아직 기록이 없습니다.",
+    clearRecords: "기록 삭제",
+    sound: "사운드",
+    soundDesc: "UISFX 게임 효과음",
+    music: "배경 음악",
+    musicDesc: "CC0 배경 음악",
+    ghost: "Ghost",
+    ghostDesc: "착지 위치 표시",
+    haptic: "진동",
+    hapticDesc: "기기 진동 피드백",
+    motion: "애니메이션",
+    motionDesc: "블록과 줄 삭제 애니메이션",
+    appearance: "화면",
+    appearanceDesc: "시스템 / 밝게 / 어둡게",
+    system: "System",
+    light: "Light",
+    dark: "Dark",
+    back: "뒤로",
+    menu: "메뉴",
+    perfectClear: "Perfect Clear",
+    tetris: "TETRIS",
+    cleared: "CLEAR",
+    recordsCleared: "기록을 삭제했습니다",
+    gestureHint: "스와이프로 이동 · 탭으로 회전 · 위로 스와이프 HOLD · 아래로 스와이프 DROP"
+  }
+};
+
+
+function getLanguage() {
+  const saved =
+    data.settings.language;
+
+  if (saved && LANGUAGES[saved]) {
+    return saved;
+  }
+
+  const browser =
+    navigator.language || "en";
+
+  if (LANGUAGES[browser]) {
+    return browser;
+  }
+
+  if (browser.startsWith("zh-TW")) {
+    return "zh-TW";
+  }
+
+  if (browser.startsWith("zh")) {
+    return "zh-CN";
+  }
+
+  if (browser.startsWith("ja")) {
+    return "ja";
+  }
+
+  if (browser.startsWith("ko")) {
+    return "ko";
+  }
+
+  return "en";
+}
+
+
+let language =
+  getLanguage();
+
+
+function t(key) {
+  return (
+    LANGUAGES[language]?.[key] ??
+    LANGUAGES.en[key] ??
+    key
+  );
+}
+
+
+function setLanguage(next) {
+  if (!LANGUAGES[next]) {
+    return;
+  }
+
+  language = next;
+  data.settings.language = next;
+  saveData(data);
+  applyI18n();
+}
+
+
+function applyI18n() {
+  document.documentElement.lang =
+    language;
+
+  const map = {
+    "#startButton": "start",
+    "#recordsButton": "records",
+    "#settingsButton": "settings",
+    "#beginButton": "begin",
+    "#resumeButton": "resume",
+    "#againButton": "playAgain",
+    "#homeButton": "home",
+    "#clearRecordsButton": "clearRecords",
+    "#pauseButton": "pause",
+    "#backButton": "back",
+    "#menuButton": "menu",
+    "#soundToggle": "sound",
+    "#musicToggle": "music",
+    "#ghostToggle": "ghost",
+    "#hapticToggle": "haptic",
+    "#motionToggle": "motion",
+    "#themeSelect": "appearance"
   };
 
-  saveData(data);
+  Object.entries(map).forEach(
+    ([selector, key]) => {
+      const el = document.querySelector(selector);
 
-};
+      if (!el) {
+        return;
+      }
 
+      if (
+        el.tagName === "INPUT" ||
+        el.tagName === "SELECT"
+      ) {
+        return;
+      }
 
-/*
- * =========================================================
- * DOM HELPERS
- * =========================================================
- */
-
-const $ = selector =>
-  document.querySelector(selector);
-
-const $$ = selector =>
-  Array.from(
-    document.querySelectorAll(selector)
+      el.textContent = t(key);
+    }
   );
 
+  const subtitle =
+    document.querySelector(".subtitle");
 
-/*
- * =========================================================
- * SCREENS
- * =========================================================
- */
+  if (subtitle) {
+    subtitle.textContent =
+      t("subtitle");
+  }
+
+  const title =
+    document.querySelector("title");
+
+  if (title) {
+    title.textContent =
+      t("title");
+  }
+
+  const homeH1 =
+    document.querySelector("#homeScreen h1");
+
+  if (homeH1) {
+    homeH1.textContent =
+      t("title");
+  }
+
+  const setupTitle =
+    document.querySelector("#setupScreen h2");
+
+  if (setupTitle) {
+    setupTitle.textContent =
+      t("modes");
+  }
+
+  const recordsTitle =
+    document.querySelector("#recordsScreen h2");
+
+  if (recordsTitle) {
+    recordsTitle.textContent =
+      t("records");
+  }
+
+  const settingsTitle =
+    document.querySelector("#settingsScreen h2");
+
+  if (settingsTitle) {
+    settingsTitle.textContent =
+      t("settings");
+  }
+
+  const modeCards =
+    document.querySelectorAll(".mode-card");
+
+  modeCards.forEach(card => {
+    const mode =
+      card.dataset.mode;
+
+    const strong =
+      card.querySelector("strong");
+
+    const span =
+      card.querySelector("span");
+
+    if (mode === "marathon") {
+      strong.textContent = t("marathon");
+      span.textContent = t("marathonDesc");
+    }
+
+    if (mode === "sprint") {
+      strong.textContent = t("sprint");
+      span.textContent = t("sprintDesc");
+    }
+
+    if (mode === "ultra") {
+      strong.textContent = t("ultra");
+      span.textContent = t("ultraDesc");
+    }
+
+    if (mode === "zen") {
+      strong.textContent = t("zen");
+      span.textContent = t("zenDesc");
+    }
+  });
+
+  const labels = {
+    ".status-label": "bestScore",
+    ".hold-card .panel-label": "hold",
+    ".right-panel .panel-label": "next",
+    ".mobile-status div:nth-child(1) span": "score",
+    ".mobile-status div:nth-child(2) span": "lines",
+    ".score-card div:nth-child(1) span": "score",
+    ".score-card div:nth-child(2) span": "lines",
+    ".score-card div:nth-child(3) span": "combo",
+    ".score-card div:nth-child(4) span": "b2b",
+    ".result-stats div:nth-child(1) span": "score",
+    ".result-stats div:nth-child(2) span": "lines",
+    ".result-stats div:nth-child(3) span": "level",
+    ".stats-grid div:nth-child(1) span": "games",
+    ".stats-grid div:nth-child(2) span": "bestScore",
+    ".stats-grid div:nth-child(3) span": "bestLines",
+    ".stats-grid div:nth-child(4) span": "bestSprint"
+  };
+
+  Object.entries(labels).forEach(
+    ([selector, key]) => {
+      const el =
+        document.querySelector(selector);
+
+      if (el) {
+        el.textContent = t(key);
+      }
+    }
+  );
+
+  const settingRows =
+    document.querySelectorAll(
+      ".setting-row"
+    );
+
+  const settingKeys = [
+    ["sound", "soundDesc"],
+    ["music", "musicDesc"],
+    ["ghost", "ghostDesc"],
+    ["haptic", "hapticDesc"],
+    ["motion", "motionDesc"],
+    ["appearance", "appearanceDesc"]
+  ];
+
+  settingRows.forEach(
+    (row, index) => {
+      const pair =
+        settingKeys[index];
+
+      if (!pair) {
+        return;
+      }
+
+      const strong =
+        row.querySelector("strong");
+
+      const small =
+        row.querySelector("small");
+
+      if (strong) {
+        strong.textContent =
+          t(pair[0]);
+      }
+
+      if (small) {
+        small.textContent =
+          t(pair[1]);
+      }
+    }
+  );
+
+  const themeSelect =
+    document.querySelector("#themeSelect");
+
+  if (themeSelect) {
+    const options =
+      themeSelect.options;
+
+    options[0].textContent = t("system");
+    options[1].textContent = t("light");
+    options[2].textContent = t("dark");
+  }
+
+  renderGestureHint();
+}
+
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const $ =
+  selector =>
+    document.querySelector(selector);
+
+const $$ =
+  selector =>
+    Array.from(
+      document.querySelectorAll(selector)
+    );
+
 
 const screens = {
-
-  home:
-    $("#homeScreen"),
-
-  setup:
-    $("#setupScreen"),
-
-  game:
-    $("#gameScreen"),
-
-  result:
-    $("#resultScreen"),
-
-  records:
-    $("#recordsScreen"),
-
-  settings:
-    $("#settingsScreen")
-
+  home: $("#homeScreen"),
+  setup: $("#setupScreen"),
+  game: $("#gameScreen"),
+  result: $("#resultScreen"),
+  records: $("#recordsScreen"),
+  settings: $("#settingsScreen")
 };
 
-
-/*
- * =========================================================
- * ELEMENTS
- * =========================================================
- */
 
 const elements = {
-
-  backButton:
-    $("#backButton"),
-
-  menuButton:
-    $("#menuButton"),
-
-  startButton:
-    $("#startButton"),
-
-  recordsButton:
-    $("#recordsButton"),
-
-  settingsButton:
-    $("#settingsButton"),
-
-  beginButton:
-    $("#beginButton"),
-
-  gameCanvas:
-    $("#gameCanvas"),
-
-  holdCanvas:
-    $("#holdCanvas"),
-
-  pauseButton:
-    $("#pauseButton"),
-
-  resumeButton:
-    $("#resumeButton"),
-
-  pauseOverlay:
-    $("#pauseOverlay"),
-
-  againButton:
-    $("#againButton"),
-
-  homeButton:
-    $("#homeButton"),
-
-  clearRecordsButton:
-    $("#clearRecordsButton"),
-
-  soundToggle:
-    $("#soundToggle"),
-
-  musicToggle:
-    $("#musicToggle"),
-
-  ghostToggle:
-    $("#ghostToggle"),
-
-  hapticToggle:
-    $("#hapticToggle"),
-
-  motionToggle:
-    $("#motionToggle"),
-
-  themeSelect:
-    $("#themeSelect"),
-
-  modeLabel:
-    $("#modeLabel"),
-
-  levelLabel:
-    $("#levelLabel"),
-
-  scoreLabel:
-    $("#scoreLabel"),
-
-  linesLabel:
-    $("#linesLabel"),
-
-  comboLabel:
-    $("#comboLabel"),
-
-  b2bLabel:
-    $("#b2bLabel"),
-
-  scoreLabelMobile:
-    $("#scoreLabelMobile"),
-
-  linesLabelMobile:
-    $("#linesLabelMobile"),
-
-  homeBestScore:
-    $("#homeBestScore"),
-
-  gamesStat:
-    $("#gamesStat"),
-
-  bestStat:
-    $("#bestStat"),
-
-  linesStat:
-    $("#linesStat"),
-
-  sprintStat:
-    $("#sprintStat"),
-
-  recordList:
-    $("#recordList"),
-
-  resultMarkText:
-    $("#resultMarkText"),
-
-  resultKicker:
-    $("#resultKicker"),
-
-  resultTitle:
-    $("#resultTitle"),
-
-  resultDescription:
-    $("#resultDescription"),
-
-  resultScore:
-    $("#resultScore"),
-
-  resultLines:
-    $("#resultLines"),
-
-  resultLevel:
-    $("#resultLevel"),
-
-  toast:
-    $("#toast")
-
+  backButton: $("#backButton"),
+  menuButton: $("#menuButton"),
+  startButton: $("#startButton"),
+  recordsButton: $("#recordsButton"),
+  settingsButton: $("#settingsButton"),
+  beginButton: $("#beginButton"),
+  gameCanvas: $("#gameCanvas"),
+  holdCanvas: $("#holdCanvas"),
+  pauseButton: $("#pauseButton"),
+  resumeButton: $("#resumeButton"),
+  pauseOverlay: $("#pauseOverlay"),
+  againButton: $("#againButton"),
+  homeButton: $("#homeButton"),
+  clearRecordsButton: $("#clearRecordsButton"),
+  soundToggle: $("#soundToggle"),
+  musicToggle: $("#musicToggle"),
+  ghostToggle: $("#ghostToggle"),
+  hapticToggle: $("#hapticToggle"),
+  motionToggle: $("#motionToggle"),
+  themeSelect: $("#themeSelect"),
+  modeLabel: $("#modeLabel"),
+  levelLabel: $("#levelLabel"),
+  scoreLabel: $("#scoreLabel"),
+  linesLabel: $("#linesLabel"),
+  comboLabel: $("#comboLabel"),
+  b2bLabel: $("#b2bLabel"),
+  scoreLabelMobile: $("#scoreLabelMobile"),
+  linesLabelMobile: $("#linesLabelMobile"),
+  homeBestScore: $("#homeBestScore"),
+  gamesStat: $("#gamesStat"),
+  bestStat: $("#bestStat"),
+  linesStat: $("#linesStat"),
+  sprintStat: $("#sprintStat"),
+  recordList: $("#recordList"),
+  resultMarkText: $("#resultMarkText"),
+  resultKicker: $("#resultKicker"),
+  resultTitle: $("#resultTitle"),
+  resultDescription: $("#resultDescription"),
+  resultScore: $("#resultScore"),
+  resultLines: $("#resultLines"),
+  resultLevel: $("#resultLevel"),
+  toast: $("#toast")
 };
 
-
-/*
- * =========================================================
- * CANVAS
- * =========================================================
- */
 
 const canvas =
   elements.gameCanvas;
@@ -301,209 +757,335 @@ const nextCanvases =
   $$(".next-list canvas");
 
 
-/*
- * =========================================================
- * GAME STATE
- * =========================================================
- */
+/* =========================================================
+   GAME
+========================================================= */
 
 const game = {
+  running: false,
+  paused: false,
+  over: false,
 
-  running:
-    false,
+  mode: "marathon",
+  modeConfig: getMode("marathon"),
 
-  paused:
-    false,
+  board: createBoard(),
+  randomizer: createRandomizer(),
 
-  over:
-    false,
+  current: null,
+  next: [],
+  hold: null,
+  holdUsed: false,
 
-  mode:
-    "marathon",
+  score: 0,
+  lines: 0,
+  level: 1,
 
-  modeConfig:
-    getMode("marathon"),
+  combo: -1,
+  b2b: false,
 
-  board:
-    createBoard(),
+  lastActionWasRotation: false,
 
-  randomizer:
-    createRandomizer(),
+  lockStartedAt: null,
+  accumulator: 0,
+  lastTime: 0,
+  startTime: 0,
 
-  current:
-    null,
+  dropInterval: 900,
+  softDropping: false,
 
-  next:
-    [],
+  animationFrame: null,
 
-  hold:
-    null,
-
-  holdUsed:
-    false,
-
-  score:
-    0,
-
-  lines:
-    0,
-
-  level:
-    1,
-
-  combo:
-    -1,
-
-  b2b:
-    false,
-
-  lastActionWasRotation:
-    false,
-
-  lastClearWasSpecial:
-    false,
-
-  /*
-   * Independent timers.
-   */
-
-  gravityTimer:
-    0,
-
-  lockTimer:
-    0,
-
-  grounded:
-    false,
-
-  lockResets:
-    0,
-
-  /*
-   * Frame timing.
-   */
-
-  lastTime:
-    0,
-
-  startTime:
-    0,
-
-  /*
-   * Ultra.
-   */
-
-  ultraEndTime:
-    null,
-
-  ultraRemaining:
-    120,
-
-  /*
-   * Drop state.
-   */
-
-  softDropping:
-    false,
-
-  /*
-   * Animation.
-   */
-
-  animationFrame:
-    null,
-
-  /*
-   * Touch repeat.
-   */
-
-  touchRepeat:
-    null,
-
-  touchAction:
-    null,
-
-  /*
-   * Keyboard repeat state.
-   */
-
-  heldKeys:
-    new Set(),
-
-  /*
-   * Prevent accidental double-start.
-   */
-
-  startLock:
-    false
-
+  touch: {
+    active: false,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+    startTime: 0,
+    moved: false,
+    holdTimer: null,
+    repeatTimer: null
+  }
 };
 
-
-/*
- * =========================================================
- * SCREEN STATE
- * =========================================================
- */
-
-let currentScreen =
-  "home";
 
 let selectedMode =
   "marathon";
 
+let currentScreen =
+  "home";
 
-/*
- * =========================================================
- * SETTINGS
- * =========================================================
- */
+
+/* =========================================================
+   DYNAMIC TOUCH UI
+========================================================= */
+
+function installTouchUI() {
+  const old =
+    document.querySelector(
+      "#kasaneTouchHint"
+    );
+
+  old?.remove();
+
+  const hint =
+    document.createElement("div");
+
+  hint.id =
+    "kasaneTouchHint";
+
+  hint.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+  document.body.appendChild(
+    hint
+  );
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "kasaneAppRuntimeStyle";
+
+  style.textContent = `
+    #kasaneTouchHint {
+      position: fixed;
+      left: 50%;
+      bottom: calc(
+        12px + env(safe-area-inset-bottom)
+      );
+      transform: translateX(-50%);
+      z-index: 30;
+      pointer-events: none;
+      padding: 8px 13px;
+      border-radius: 999px;
+      background: rgba(71,90,97,.72);
+      color: white;
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: .02em;
+      opacity: .72;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: opacity .25s ease;
+      white-space: nowrap;
+    }
+
+    body.kasane-playing
+      #kasaneTouchHint {
+      opacity: .34;
+    }
+
+    .mobile-controls {
+      display: none !important;
+    }
+
+    .game-screen {
+      padding-bottom:
+        calc(
+          12px +
+          env(safe-area-inset-bottom)
+        ) !important;
+    }
+
+    #gameCanvas {
+      cursor: default;
+      touch-action: none !important;
+    }
+
+    @media (max-width: 900px) {
+      .game-layout {
+        grid-template-columns: 1fr !important;
+        width: min(680px, 100%) !important;
+        gap: 10px !important;
+      }
+
+      .left-panel,
+      .right-panel {
+        display: none !important;
+      }
+
+      .board-column {
+        width: min(
+          100%,
+          560px
+        );
+        margin: 0 auto;
+      }
+
+      .board-frame {
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        aspect-ratio: 10 / 20 !important;
+      }
+
+      .mobile-status {
+        display: flex !important;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 9px;
+      }
+
+      .mobile-status > div {
+        flex: 1;
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 15px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--surface);
+      }
+
+      .mobile-status span {
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: .08em;
+      }
+
+      .mobile-status strong {
+        font-size: 20px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .topbar {
+        grid-template-columns: 52px 1fr 52px;
+      }
+
+      .game-screen {
+        padding:
+          10px
+          10px
+          calc(
+            10px +
+            env(safe-area-inset-bottom)
+          ) !important;
+      }
+
+      .board-column {
+        width: 100%;
+      }
+
+      .board-frame {
+        border-radius: 18px !important;
+        padding: 7px !important;
+      }
+
+      #gameCanvas {
+        border-radius: 13px !important;
+      }
+
+      #kasaneTouchHint {
+        font-size: 10px;
+        max-width: calc(100vw - 30px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    @media (orientation: landscape)
+      and (max-height: 600px) {
+
+      .game-screen {
+        padding-top: 7px !important;
+      }
+
+      .board-column {
+        width: auto !important;
+      }
+
+      .board-frame {
+        height:
+          calc(
+            100dvh -
+            90px -
+            env(safe-area-inset-top) -
+            env(safe-area-inset-bottom)
+          ) !important;
+        width: auto !important;
+      }
+
+      .mobile-status {
+        display: none !important;
+      }
+
+      #kasaneTouchHint {
+        bottom:
+          calc(
+            6px +
+            env(safe-area-inset-bottom)
+          );
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+
+function renderGestureHint() {
+  const hint =
+    $("#kasaneTouchHint");
+
+  if (hint) {
+    hint.textContent =
+      t("gestureHint");
+  }
+}
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
 
 function syncSettings() {
-
   if (elements.soundToggle) {
-
     elements.soundToggle.checked =
       data.settings.sound !== false;
-
   }
 
   if (elements.musicToggle) {
-
     elements.musicToggle.checked =
       data.settings.music !== false;
-
   }
 
   if (elements.ghostToggle) {
-
     elements.ghostToggle.checked =
       data.settings.ghost !== false;
-
   }
 
   if (elements.hapticToggle) {
-
     elements.hapticToggle.checked =
       data.settings.haptic !== false;
-
   }
 
   if (elements.motionToggle) {
-
     elements.motionToggle.checked =
       data.settings.motion !== false;
-
   }
 
   if (elements.themeSelect) {
-
     elements.themeSelect.value =
       data.settings.theme ||
       "system";
-
   }
-
 }
 
 
@@ -511,7 +1093,6 @@ function updateSetting(
   key,
   value
 ) {
-
   data.settings[key] =
     value;
 
@@ -522,46 +1103,23 @@ function updateSetting(
 
   window.KasaneData =
     data;
-
 }
 
 
 function applyTheme() {
-
-  const theme =
+  document.documentElement.dataset.theme =
     data.settings.theme ||
     "system";
-
-  document.documentElement
-    .dataset
-    .theme =
-      theme;
-
 }
 
 
-function initializeSettings() {
-
-  syncSettings();
-
-  applyTheme();
-
-}
-
-
-/*
- * =========================================================
- * SCREEN NAVIGATION
- * =========================================================
- */
+/* =========================================================
+   NAVIGATION
+========================================================= */
 
 function showScreen(name) {
-
-  Object.entries(
-    screens
-  ).forEach(
+  Object.entries(screens).forEach(
     ([key, screen]) => {
-
       if (!screen) {
         return;
       }
@@ -570,7 +1128,6 @@ function showScreen(name) {
         "active",
         key === name
       );
-
     }
   );
 
@@ -578,73 +1135,64 @@ function showScreen(name) {
     name;
 
   if (name === "home") {
-
     updateHome();
-
   }
 
   if (name === "records") {
-
     renderRecords();
-
   }
 
   if (name === "settings") {
-
     syncSettings();
-
   }
 
   if (name === "game") {
+    document.body.classList.add(
+      "kasane-playing"
+    );
 
-    resizeCanvas();
-
-    draw();
-
+    requestAnimationFrame(() => {
+      resizeCanvas();
+      draw();
+    });
+  } else {
+    document.body.classList.remove(
+      "kasane-playing"
+    );
   }
-
 }
 
 
 function goHome() {
+  stopTouchTimers();
 
   if (
     game.running &&
     !game.over
   ) {
-
-    pauseGame();
-
+    game.running = false;
   }
 
   showScreen("home");
-
 }
 
 
-/*
- * =========================================================
- * MODE SELECTION
- * =========================================================
- */
+/* =========================================================
+   MODE
+========================================================= */
 
 function setupModeSelection() {
-
-  $$(".mode-card")
-    .forEach(button => {
-
+  $$(".mode-card").forEach(
+    button => {
       button.addEventListener(
         "click",
         () => {
-
-          $$(".mode-card")
-            .forEach(item => {
-
+          $$(".mode-card").forEach(
+            item =>
               item.classList.remove(
                 "selected"
-              );
-
-            });
+              )
+          );
 
           button.classList.add(
             "selected"
@@ -657,43 +1205,33 @@ function setupModeSelection() {
           playSFX(
             SFX.move,
             {
-              cooldownMs:
-                80
+              cooldownMs: 40
             }
           );
-
         }
       );
-
-    });
-
+    }
+  );
 }
 
 
-/*
- * =========================================================
- * QUEUE
- * =========================================================
- */
+/* =========================================================
+   RANDOMIZER
+========================================================= */
 
 function fillNextQueue() {
-
   while (
     game.next.length <
     CONFIG.NEXT_COUNT
   ) {
-
     game.next.push(
       game.randomizer.next()
     );
-
   }
-
 }
 
 
 function takeNextPiece() {
-
   fillNextQueue();
 
   const type =
@@ -702,122 +1240,21 @@ function takeNextPiece() {
   fillNextQueue();
 
   return createPiece(type);
-
 }
 
 
-/*
- * =========================================================
- * SPAWN
- * =========================================================
- */
-
-function spawnPiece() {
-
-  game.current =
-    takeNextPiece();
-
-  game.holdUsed =
-    false;
-
-  game.gravityTimer =
-    0;
-
-  game.lockTimer =
-    0;
-
-  game.grounded =
-    false;
-
-  game.lockResets =
-    0;
-
-  game.lastActionWasRotation =
-    false;
-
-  /*
-   * Spawn immediately.
-   */
-
-  if (
-    collides(
-      game.board,
-      game.current
-    )
-  ) {
-
-    finishGame(false);
-
-    return false;
-
-  }
-
-  return true;
-
-}
-
-
-/*
- * =========================================================
- * START GAME
- * =========================================================
- */
+/* =========================================================
+   START
+========================================================= */
 
 function startGame(
   modeId = selectedMode
 ) {
-
-  if (game.startLock) {
-    return;
-  }
-
-  game.startLock =
-    true;
-
-  setTimeout(
-    () => {
-
-      game.startLock =
-        false;
-
-    },
-    150
-  );
-
-
   unlockAudio();
 
-  /*
-   * Cancel old loop.
-   */
-
-  if (
-    game.animationFrame !==
-    null
-  ) {
-
-    cancelAnimationFrame(
-      game.animationFrame
-    );
-
-    game.animationFrame =
-      null;
-
-  }
-
-
-  /*
-   * Reset game.
-   */
-
-  game.running =
-    true;
-
-  game.paused =
-    false;
-
-  game.over =
-    false;
+  game.running = true;
+  game.paused = false;
+  game.over = false;
 
   game.mode =
     modeId;
@@ -831,53 +1268,24 @@ function startGame(
   game.randomizer =
     createRandomizer();
 
-  game.current =
-    null;
+  game.next = [];
+  game.hold = null;
+  game.holdUsed = false;
 
-  game.next =
-    [];
+  game.score = 0;
+  game.lines = 0;
+  game.level = 1;
 
-  game.hold =
-    null;
-
-  game.holdUsed =
-    false;
-
-  game.score =
-    0;
-
-  game.lines =
-    0;
-
-  game.level =
-    1;
-
-  game.combo =
-    -1;
-
-  game.b2b =
-    false;
+  game.combo = -1;
+  game.b2b = false;
 
   game.lastActionWasRotation =
     false;
 
-  game.lastClearWasSpecial =
-    false;
+  game.lockStartedAt =
+    null;
 
-  game.gravityTimer =
-    0;
-
-  game.lockTimer =
-    0;
-
-  game.grounded =
-    false;
-
-  game.lockResets =
-    0;
-
-  game.softDropping =
-    false;
+  game.accumulator = 0;
 
   game.lastTime =
     performance.now();
@@ -885,552 +1293,129 @@ function startGame(
   game.startTime =
     performance.now();
 
-  game.ultraRemaining =
-    game.modeConfig.duration ||
-    120;
-
-  game.ultraEndTime =
-    game.modeConfig.timed
-      ? performance.now() +
-        game.modeConfig.duration *
-        1000
-      : null;
-
-
   fillNextQueue();
 
-
-  if (!spawnPiece()) {
-
-    return;
-
-  }
-
+  game.current =
+    takeNextPiece();
 
   updateGravity();
 
-  updateGameUI();
+  if (
+    collides(
+      game.board,
+      game.current
+    )
+  ) {
+    finishGame(false);
+    return;
+  }
 
   showScreen("game");
 
-  focusGameCanvas();
+  updateGameUI();
 
-  if (
-    elements.pauseOverlay
-  ) {
-
-    elements.pauseOverlay.hidden =
-      true;
-
-  }
-
-
-  playSFX(
-    SFX.resume
+  cancelAnimationFrame(
+    game.animationFrame
   );
 
-
   game.animationFrame =
-    requestAnimationFrame(
-      loop
-    );
+    requestAnimationFrame(loop);
 
+  playSFX(SFX.resume);
+
+  focusGameCanvas();
 }
 
 
-/*
- * =========================================================
- * GRAVITY
- * =========================================================
- */
-
-function updateGravity() {
-
-  game.level =
-    getLevel(
-      game.lines,
-      game.mode
-    );
-
-  game.dropInterval =
-    Math.max(
-      1,
-      Number(
-        game.modeConfig.gravity(
-          game.level
-        )
-      ) || 900
-    );
-
-}
-
-
-/*
- * =========================================================
- * MAIN LOOP
- * =========================================================
- */
+/* =========================================================
+   LOOP
+========================================================= */
 
 function loop(timestamp) {
-
   if (!game.running) {
-
     return;
-
   }
 
-
-  /*
-   * First frame protection.
-   */
-
-  if (!game.lastTime) {
-
-    game.lastTime =
-      timestamp;
-
-  }
-
-
-  let delta =
-    timestamp -
-    game.lastTime;
-
+  const delta =
+    Math.min(
+      100,
+      Math.max(
+        0,
+        timestamp -
+        game.lastTime
+      )
+    );
 
   game.lastTime =
     timestamp;
-
-
-  /*
-   * Never allow a huge background
-   * delta to dump the entire board.
-   */
-
-  delta =
-    Math.min(
-      delta,
-      100
-    );
-
 
   if (
     !game.paused &&
     !game.over
   ) {
-
     update(
       delta,
       timestamp
     );
-
   }
-
 
   draw();
 
-
-  if (game.running) {
-
-    game.animationFrame =
-      requestAnimationFrame(
-        loop
-      );
-
-  }
-
+  game.animationFrame =
+    requestAnimationFrame(loop);
 }
 
 
-/*
- * =========================================================
- * UPDATE
- * =========================================================
- */
+/* =========================================================
+   UPDATE
+========================================================= */
 
 function update(
   delta,
   timestamp
 ) {
-
-  /*
-   * Ultra timer.
-   */
-
   if (
-    game.modeConfig.timed &&
-    game.ultraEndTime !== null
+    game.modeConfig.timed
   ) {
+    const elapsed =
+      (
+        timestamp -
+        game.startTime
+      ) / 1000;
 
     const remaining =
       Math.max(
         0,
-        game.ultraEndTime -
-        timestamp
+        game.modeConfig.duration -
+        elapsed
       );
-
-
-    game.ultraRemaining =
-      remaining /
-      1000;
-
 
     if (
       remaining <= 0
     ) {
-
       finishGame(true);
-
       return;
-
     }
-
   }
 
-
-  /*
-   * Gravity is independent from rendering.
-   */
-
-  game.gravityTimer +=
-    delta;
-
-
-  /*
-   * Soft drop makes gravity faster,
-   * but still uses the same timer.
-   */
-
-  const gravityInterval =
+  const interval =
     game.softDropping
       ? Math.max(
-          16,
+          25,
           game.dropInterval /
           CONFIG.SOFT_DROP_FACTOR
         )
       : game.dropInterval;
 
-
-  /*
-   * Process gravity ticks.
-   *
-   * Maximum 8 steps per frame prevents
-   * pathological loops.
-   */
-
-  let steps =
-    0;
-
+  game.accumulator +=
+    delta;
 
   while (
-    game.gravityTimer >=
-    gravityInterval &&
-    steps < 8
+    game.accumulator >=
+    interval
   ) {
-
-    game.gravityTimer -=
-      gravityInterval;
-
-    steps++;
-
-
-    gravityStep();
-
-  }
-
-
-  /*
-   * Lock timer runs separately.
-   */
-
-  if (
-    game.grounded
-  ) {
-
-    game.lockTimer +=
-      delta;
-
-
-    if (
-      game.lockTimer >=
-      CONFIG.LOCK_DELAY
-    ) {
-
-      lockPiece();
-
-      return;
-
-    }
-
-  }
-
-
-  updateGameUI();
-
-}
-
-
-/*
- * =========================================================
- * GRAVITY STEP
- * =========================================================
- */
-
-function gravityStep() {
-
-  if (
-    !game.current
-  ) {
-
-    return;
-
-  }
-
-
-  const moved =
-    tryMove(
-      game.board,
-      game.current,
-      0,
-      1
-    );
-
-
-  if (moved) {
-
-    game.current =
-      moved;
-
-    /*
-     * The piece is no longer grounded.
-     */
-
-    game.grounded =
-      false;
-
-    game.lockTimer =
-      0;
-
-    return;
-
-  }
-
-
-  /*
-   * It has touched the stack.
-   */
-
-  if (!game.grounded) {
-
-    game.grounded =
-      true;
-
-    game.lockTimer =
-      0;
-
-  }
-
-}
-
-
-/*
- * =========================================================
- * CAN PLAY
- * =========================================================
- */
-
-function canPlay() {
-
-  return (
-    game.running &&
-    !game.paused &&
-    !game.over &&
-    Boolean(
-      game.current
-    )
-  );
-
-}
-
-
-/*
- * =========================================================
- * LOCK RESET
- * =========================================================
- */
-
-function resetLockDelay() {
-
-  if (
-    !game.grounded
-  ) {
-
-    return;
-
-  }
-
-
-  if (
-    game.lockResets >=
-    CONFIG.MAX_LOCK_RESETS
-  ) {
-
-    return;
-
-  }
-
-
-  game.lockTimer =
-    0;
-
-  game.lockResets +=
-    1;
-
-}
-
-
-/*
- * =========================================================
- * HORIZONTAL MOVE
- * =========================================================
- */
-
-function moveHorizontal(
-  direction
-) {
-
-  if (!canPlay()) {
-
-    return false;
-
-  }
-
-
-  const moved =
-    tryMove(
-      game.board,
-      game.current,
-      direction,
-      0
-    );
-
-
-  if (!moved) {
-
-    return false;
-
-  }
-
-
-  game.current =
-    moved;
-
-  game.lastActionWasRotation =
-    false;
-
-  resetLockDelay();
-
-
-  playSFX(
-    SFX.move,
-    {
-      cooldownMs:
-        35
-    }
-  );
-
-
-  vibrate(5);
-
-  draw();
-
-  return true;
-
-}
-
-
-/*
- * =========================================================
- * SOFT DROP
- * =========================================================
- */
-
-function softDrop() {
-
-  if (!canPlay()) {
-
-    return false;
-
-  }
-
-
-  const moved =
-    tryMove(
-      game.board,
-      game.current,
-      0,
-      1
-    );
-
-
-  if (!moved) {
-
-    /*
-     * Immediately mark grounded.
-     */
-
-    game.grounded =
-      true;
-
-    return false;
-
-  }
-
-
-  game.current =
-    moved;
-
-  game.score +=
-    CONFIG.SCORE.softDrop;
-
-  game.lastActionWasRotation =
-    false;
-
-  game.grounded =
-    false;
-
-  game.lockTimer =
-    0;
-
-  game.gravityTimer =
-    0;
-
-  draw();
-
-  return true;
-
-}
-
-
-/*
- * =========================================================
- * HARD DROP
- * =========================================================
- */
-
-function hardDrop() {
-
-  if (!canPlay()) {
-
-    return;
-
-  }
-
-
-  let distance =
-    0;
-
-
-  while (true) {
+    game.accumulator -=
+      interval;
 
     const moved =
       tryMove(
@@ -1440,66 +1425,192 @@ function hardDrop() {
         1
       );
 
+    if (moved) {
+      game.current =
+        moved;
+
+      game.lockStartedAt =
+        null;
+    } else {
+      if (
+        game.lockStartedAt ===
+        null
+      ) {
+        game.lockStartedAt =
+          timestamp;
+      }
+
+      if (
+        timestamp -
+        game.lockStartedAt >=
+        CONFIG.LOCK_DELAY
+      ) {
+        lockPiece();
+        break;
+      }
+    }
+  }
+
+  updateGameUI();
+}
+
+
+/* =========================================================
+   GRAVITY
+========================================================= */
+
+function updateGravity() {
+  game.level =
+    getLevel(
+      game.lines,
+      game.mode
+    );
+
+  game.dropInterval =
+    game.modeConfig.gravity(
+      game.level
+    );
+}
+
+
+/* =========================================================
+   MOVE
+========================================================= */
+
+function moveHorizontal(
+  direction
+) {
+  if (!canPlay()) {
+    return false;
+  }
+
+  const moved =
+    tryMove(
+      game.board,
+      game.current,
+      direction,
+      0
+    );
+
+  if (!moved) {
+    return false;
+  }
+
+  game.current =
+    moved;
+
+  game.lastActionWasRotation =
+    false;
+
+  game.lockStartedAt =
+    null;
+
+  playSFX(
+    SFX.move,
+    {
+      cooldownMs: 35
+    }
+  );
+
+  vibrate(4);
+
+  draw();
+
+  return true;
+}
+
+
+/* =========================================================
+   SOFT DROP
+========================================================= */
+
+function softDrop() {
+  if (!canPlay()) {
+    return false;
+  }
+
+  const moved =
+    tryMove(
+      game.board,
+      game.current,
+      0,
+      1
+    );
+
+  if (!moved) {
+    return false;
+  }
+
+  game.current =
+    moved;
+
+  game.lastActionWasRotation =
+    false;
+
+  game.score +=
+    CONFIG.SCORE.softDrop;
+
+  game.lockStartedAt =
+    null;
+
+  draw();
+
+  return true;
+}
+
+
+/* =========================================================
+   HARD DROP
+========================================================= */
+
+function hardDrop() {
+  if (!canPlay()) {
+    return;
+  }
+
+  let distance = 0;
+
+  while (true) {
+    const moved =
+      tryMove(
+        game.board,
+        game.current,
+        0,
+        1
+      );
 
     if (!moved) {
-
       break;
-
     }
-
 
     game.current =
       moved;
 
     distance++;
-
   }
-
 
   game.score +=
     distance *
     CONFIG.SCORE.hardDrop;
 
+  playSFX(SFX.drop);
 
-  game.grounded =
-    true;
-
-  game.gravityTimer =
-    0;
-
-  game.lockTimer =
-    CONFIG.LOCK_DELAY;
-
-
-  playSFX(
-    SFX.drop
-  );
-
-
-  vibrate(12);
-
+  vibrate(10);
 
   lockPiece();
-
 }
 
 
-/*
- * =========================================================
- * ROTATION
- * =========================================================
- */
+/* =========================================================
+   ROTATE
+========================================================= */
 
 function rotate(
   direction
 ) {
-
   if (!canPlay()) {
-
     return false;
-
   }
-
 
   const result =
     tryRotate(
@@ -1508,13 +1619,9 @@ function rotate(
       direction
     );
 
-
   if (!result) {
-
     return false;
-
   }
-
 
   game.current =
     result.piece;
@@ -1522,145 +1629,84 @@ function rotate(
   game.lastActionWasRotation =
     true;
 
-
-  resetLockDelay();
-
-
-  /*
-   * A rotation also means the
-   * next gravity tick starts cleanly.
-   */
-
-  game.gravityTimer =
-    0;
-
+  game.lockStartedAt =
+    null;
 
   playSFX(
     SFX.rotate,
     {
-      cooldownMs:
-        40
+      cooldownMs: 40
     }
   );
 
-
-  vibrate(5);
+  vibrate(4);
 
   draw();
 
   return true;
-
 }
 
 
-/*
- * =========================================================
- * HOLD
- * =========================================================
- */
+/* =========================================================
+   HOLD
+========================================================= */
 
 function holdPiece() {
-
   if (
     !canPlay() ||
     game.holdUsed
   ) {
-
     return;
-
   }
-
 
   const currentType =
     game.current.type;
 
-
   if (game.hold) {
-
-    const heldType =
+    const nextType =
       game.hold;
 
     game.hold =
       currentType;
 
     game.current =
-      createPiece(
-        heldType
-      );
-
+      createPiece(nextType);
   } else {
-
     game.hold =
       currentType;
 
     game.current =
       takeNextPiece();
-
   }
-
 
   game.holdUsed =
     true;
 
-  game.gravityTimer =
-    0;
-
-  game.lockTimer =
-    0;
-
-  game.grounded =
-    false;
-
-  game.lockResets =
-    0;
+  game.lockStartedAt =
+    null;
 
   game.lastActionWasRotation =
     false;
 
+  playSFX(SFX.hold);
 
-  if (
-    collides(
-      game.board,
-      game.current
-    )
-  ) {
-
-    finishGame(false);
-
-    return;
-
-  }
-
-
-  playSFX(
-    SFX.hold
-  );
-
-
-  vibrate(8);
+  vibrate(7);
 
   draw();
-
 }
 
 
-/*
- * =========================================================
- * LOCK PIECE
- * =========================================================
- */
+/* =========================================================
+   LOCK
+========================================================= */
 
 function lockPiece() {
-
   if (
     !game.current ||
     game.over
   ) {
-
     return;
-
   }
-
 
   const wasTSpin =
     isTSpin(
@@ -1669,69 +1715,39 @@ function lockPiece() {
       game.lastActionWasRotation
     );
 
-
   game.board =
     merge(
       game.board,
       game.current
     );
 
-
-  playSFX(
-    SFX.lock
-  );
-
+  playSFX(SFX.lock);
 
   const result =
     clearLines(
       game.board
     );
 
-
   game.board =
     result.board;
-
 
   const cleared =
     result.lines;
 
-
-  game.lastClearWasSpecial =
-    false;
-
-
   if (wasTSpin) {
-
-    game.lastClearWasSpecial =
-      true;
-
-    scoreTSpin(
-      cleared
-    );
-
+    scoreTSpin(cleared);
   } else if (cleared > 0) {
-
-    scoreNormalClear(
-      cleared
-    );
-
+    scoreNormalClear(cleared);
   } else {
-
-    game.combo =
-      -1;
-
+    game.combo = -1;
   }
-
 
   game.lines +=
     cleared;
 
-
   updateGravity();
 
-
   if (cleared > 0) {
-
     playClearSound(
       cleared,
       wasTSpin
@@ -1739,285 +1755,179 @@ function lockPiece() {
 
     vibrate(
       cleared >= 4
-        ? 30
-        : 12
+        ? 28
+        : 10
     );
-
   }
 
-
   if (
-    cleared > 0 &&
     isPerfectClear(
       game.board
-    )
+    ) &&
+    cleared > 0
   ) {
-
     game.score +=
       CONFIG.SCORE.perfectClear;
 
     showToast(
-      "Perfect Clear"
+      t("perfectClear")
     );
-
   }
-
-
-  /*
-   * Sprint completion.
-   */
 
   if (
     game.mode === "sprint" &&
     game.lines >=
     game.modeConfig.target
   ) {
-
     finishGame(true);
-
     return;
-
   }
 
+  game.current =
+    takeNextPiece();
 
-  /*
-   * Spawn next.
-   */
+  game.holdUsed =
+    false;
 
-  if (!spawnPiece()) {
+  game.lockStartedAt =
+    null;
 
-    return;
+  game.lastActionWasRotation =
+    false;
 
+  if (
+    collides(
+      game.board,
+      game.current
+    )
+  ) {
+    finishGame(false);
   }
-
-
-  updateGameUI();
-
-  draw();
-
 }
 
 
-/*
- * =========================================================
- * NORMAL SCORING
- * =========================================================
- */
+/* =========================================================
+   SCORING
+========================================================= */
 
 function scoreNormalClear(
   lines
 ) {
+  game.combo += 1;
 
-  game.combo +=
-    1;
-
-
-  const base =
+  let score =
     scoringLines(
       lines,
       game.level
     );
 
-
-  let score =
-    base;
-
-
-  const difficult =
-    lines === 4;
-
-
-  if (difficult) {
-
+  if (lines === 4) {
     if (game.b2b) {
-
       score =
         Math.floor(
           score * 1.5
         );
-
     }
 
-    game.b2b =
-      true;
-
+    game.b2b = true;
   } else {
-
-    game.b2b =
-      false;
-
+    game.b2b = false;
   }
 
-
-  if (
-    game.combo > 0
-  ) {
-
+  if (game.combo > 0) {
     score +=
       game.combo *
       CONFIG.SCORE.combo;
 
     playSFX(
-      SFX.combo
+      SFX.combo,
+      {
+        cooldownMs: 80
+      }
     );
-
   }
-
 
   game.score +=
     score;
-
 }
 
-
-/*
- * =========================================================
- * T-SPIN
- * =========================================================
- */
 
 function scoreTSpin(
   lines
 ) {
+  game.combo += 1;
 
-  game.combo +=
-    1;
+  let score = 0;
 
-
-  let score =
-    0;
-
-
-  if (
-    lines === 1
-  ) {
-
+  if (lines === 1) {
     score =
       CONFIG.SCORE.tSpinSingle;
-
-  } else if (
-    lines === 2
-  ) {
-
+  } else if (lines === 2) {
     score =
       CONFIG.SCORE.tSpinDouble;
-
-  } else if (
-    lines === 3
-  ) {
-
+  } else if (lines === 3) {
     score =
       CONFIG.SCORE.tSpinTriple;
-
   } else {
-
     score =
       CONFIG.SCORE.tSpinMini;
-
   }
-
 
   score *=
     game.level;
 
-
-  if (
-    game.b2b
-  ) {
-
+  if (game.b2b) {
     score =
       Math.floor(
         score * 1.5
       );
-
   }
-
 
   game.b2b =
     lines > 0;
 
-
   game.score +=
     score;
 
-
-  playSFX(
-    SFX.tSpin
-  );
-
+  playSFX(SFX.tSpin);
 }
 
-
-/*
- * =========================================================
- * CLEAR SOUND
- * =========================================================
- */
 
 function playClearSound(
   lines,
   tSpin
 ) {
-
   if (tSpin) {
-
-    playSFX(
-      SFX.tSpin
-    );
-
+    playSFX(SFX.tSpin);
     return;
-
   }
-
 
   if (lines >= 4) {
-
-    playSFX(
-      SFX.tetris
-    );
-
-    showToast(
-      "TETRIS"
-    );
-
+    playSFX(SFX.tetris);
+    showToast(t("tetris"));
     return;
-
   }
 
-
-  playSFX(
-    SFX.line
-  );
-
+  playSFX(SFX.line);
 }
 
 
-/*
- * =========================================================
- * PAUSE
- * =========================================================
- */
+/* =========================================================
+   PAUSE
+========================================================= */
 
 function pauseGame() {
-
   if (
     !game.running ||
     game.over
   ) {
-
     return;
-
   }
-
 
   if (game.paused) {
-
     resumeGame();
-
     return;
-
   }
-
 
   game.paused =
     true;
@@ -2025,51 +1935,24 @@ function pauseGame() {
   game.softDropping =
     false;
 
-  game.lastTime =
-    0;
-
-  /*
-   * Timers stop because update()
-   * is no longer called.
-   */
-
-  if (
-    elements.pauseOverlay
-  ) {
-
+  if (elements.pauseOverlay) {
     elements.pauseOverlay.hidden =
       false;
-
   }
 
-
-  playSFX(
-    SFX.pause
-  );
-
+  playSFX(SFX.pause);
 
   draw();
-
 }
 
 
-/*
- * =========================================================
- * RESUME
- * =========================================================
- */
-
 function resumeGame() {
-
   if (
     !game.running ||
     game.over
   ) {
-
     return;
-
   }
-
 
   game.paused =
     false;
@@ -2077,51 +1960,34 @@ function resumeGame() {
   game.lastTime =
     performance.now();
 
-  /*
-   * Do not reset gravityTimer.
-   * The piece resumes exactly where
-   * it was before pause.
-   */
+  game.accumulator =
+    0;
 
-  if (
-    elements.pauseOverlay
-  ) {
-
+  if (elements.pauseOverlay) {
     elements.pauseOverlay.hidden =
       true;
-
   }
-
 
   unlockAudio();
 
-  playSFX(
-    SFX.resume
-  );
+  playSFX(SFX.resume);
 
   focusGameCanvas();
 
   draw();
-
 }
 
 
-/*
- * =========================================================
- * FINISH
- * =========================================================
- */
+/* =========================================================
+   FINISH
+========================================================= */
 
 function finishGame(
   completed
 ) {
-
   if (game.over) {
-
     return;
-
   }
-
 
   game.over =
     true;
@@ -2135,69 +2001,37 @@ function finishGame(
   game.softDropping =
     false;
 
-
-  if (
-    game.animationFrame !==
-    null
-  ) {
-
-    cancelAnimationFrame(
-      game.animationFrame
-    );
-
-    game.animationFrame =
-      null;
-
-  }
-
-
-  stopRepeat();
-
+  stopTouchTimers();
 
   const elapsed =
     (
       performance.now() -
       game.startTime
-    ) /
-    1000;
-
+    ) / 1000;
 
   const result = {
-
-    mode:
-      game.mode,
-
-    score:
-      game.score,
-
-    lines:
-      game.lines,
-
-    level:
-      game.level,
-
+    mode: game.mode,
+    score: game.score,
+    lines: game.lines,
+    level: game.level,
     time:
       game.mode === "ultra"
-        ? 120
+        ? Math.min(
+            120,
+            elapsed
+          )
         : elapsed,
-
     completed:
-      Boolean(
-        completed
-      )
-
+      Boolean(completed)
   };
-
 
   recordGame(
     data,
     result
   );
 
-
   window.KasaneData =
     data;
-
 
   playSFX(
     completed
@@ -2205,213 +2039,146 @@ function finishGame(
       : SFX.gameover
   );
 
-
   vibrate(
     completed
-      ? 35
-      : 60
+      ? 30
+      : 55
   );
 
-
-  showResult(
-    result
-  );
-
-
+  showResult(result);
   updateHome();
-
 }
 
 
-/*
- * =========================================================
- * RESULT
- * =========================================================
- */
+/* =========================================================
+   RESULT
+========================================================= */
 
 function showResult(
   result
 ) {
-
-  if (
-    elements.resultScore
-  ) {
-
+  if (elements.resultScore) {
     elements.resultScore.textContent =
-      String(
-        result.score
-      );
-
+      String(result.score);
   }
 
-
-  if (
-    elements.resultLines
-  ) {
-
+  if (elements.resultLines) {
     elements.resultLines.textContent =
-      String(
-        result.lines
-      );
-
+      String(result.lines);
   }
 
-
-  if (
-    elements.resultLevel
-  ) {
-
+  if (elements.resultLevel) {
     elements.resultLevel.textContent =
-      String(
-        result.level
-      );
-
+      String(result.level);
   }
 
-
-  if (
-    elements.resultMarkText
-  ) {
-
+  if (elements.resultMarkText) {
     elements.resultMarkText.textContent =
       result.completed
-        ? "CLEAR"
-        : "GAME";
-
+        ? t("clear")
+        : t("game");
   }
 
-
-  if (
-    elements.resultKicker
-  ) {
-
+  if (elements.resultKicker) {
     elements.resultKicker.textContent =
       result.completed
-        ? "GAME COMPLETE"
-        : "GAME OVER";
-
+        ? t("gameComplete")
+        : t("gameOver");
   }
 
-
-  if (
-    elements.resultTitle
-  ) {
-
+  if (elements.resultTitle) {
     if (
       result.mode === "sprint" &&
       result.completed
     ) {
-
       elements.resultTitle.textContent =
-        "40 行完成";
-
+        t("sprintComplete");
     } else if (
       result.mode === "ultra"
     ) {
-
       elements.resultTitle.textContent =
-        "時間到";
-
+        t("timeUp");
     } else {
-
       elements.resultTitle.textContent =
         result.completed
-          ? "完成得很好"
-          : "這局結束了";
-
+          ? t("complete")
+          : t("gameEnded");
     }
-
   }
 
-
-  if (
-    elements.resultDescription
-  ) {
-
+  if (elements.resultDescription) {
     elements.resultDescription.textContent =
       result.mode === "sprint"
         ? (
             result.completed
-              ? `用時 ${formatTime(result.time)}`
-              : `已完成 ${result.lines} 行`
+              ? formatTime(result.time)
+              : `${result.lines}`
           )
-        : (
-            `${result.lines} 行 · ${result.score} 分`
-          );
-
+        : `${result.lines} · ${result.score}`;
   }
 
-
-  showScreen(
-    "result"
-  );
-
+  showScreen("result");
 }
 
 
-/*
- * =========================================================
- * CANVAS RESIZE
- * =========================================================
- */
+/* =========================================================
+   CAN PLAY
+========================================================= */
+
+function canPlay() {
+  return (
+    game.running &&
+    !game.paused &&
+    !game.over &&
+    Boolean(game.current)
+  );
+}
+
+
+/* =========================================================
+   CANVAS
+========================================================= */
 
 function resizeCanvas() {
-
-  if (
-    !canvas ||
-    !ctx
-  ) {
-
+  if (!canvas || !ctx) {
     return;
-
   }
-
 
   const rect =
     canvas.getBoundingClientRect();
 
-
   const dpr =
     Math.min(
-      window.devicePixelRatio ||
-      1,
+      window.devicePixelRatio || 1,
       2
     );
-
 
   const width =
     Math.max(
       1,
-      Math.floor(
-        rect.width *
-        dpr
+      Math.round(
+        rect.width * dpr
       )
     );
-
 
   const height =
     Math.max(
       1,
-      Math.floor(
-        rect.height *
-        dpr
+      Math.round(
+        rect.height * dpr
       )
     );
-
 
   if (
     canvas.width !== width ||
     canvas.height !== height
   ) {
-
     canvas.width =
       width;
 
     canvas.height =
       height;
-
   }
-
 
   ctx.setTransform(
     dpr,
@@ -2421,98 +2188,54 @@ function resizeCanvas() {
     0,
     0
   );
-
 }
 
 
-/*
- * =========================================================
- * BOARD GEOMETRY
- * =========================================================
- */
-
 function getBoardGeometry() {
-
   const rect =
     canvas.getBoundingClientRect();
-
-
-  const width =
-    rect.width;
-
-
-  const height =
-    rect.height;
-
 
   const cell =
     Math.min(
-      width /
+      rect.width /
         CONFIG.WIDTH,
-      height /
+      rect.height /
         CONFIG.HEIGHT
     );
 
-
-  const boardWidth =
+  const width =
     cell *
     CONFIG.WIDTH;
 
-
-  const boardHeight =
+  const height =
     cell *
     CONFIG.HEIGHT;
 
-
   return {
-
     x:
-      (width -
-       boardWidth) /
-      2,
-
+      (rect.width - width) / 2,
     y:
-      (height -
-       boardHeight) /
-      2,
-
+      (rect.height - height) / 2,
     cell,
-
-    width:
-      boardWidth,
-
-    height:
-      boardHeight
-
+    width,
+    height
   };
-
 }
 
 
-/*
- * =========================================================
- * DRAW
- * =========================================================
- */
+/* =========================================================
+   DRAW
+========================================================= */
 
 function draw() {
-
-  if (
-    !canvas ||
-    !ctx
-  ) {
-
+  if (!canvas || !ctx) {
     return;
-
   }
-
 
   resizeCanvas();
 
-
   const rect =
     canvas.getBoundingClientRect();
-
 
   ctx.clearRect(
     0,
@@ -2521,80 +2244,53 @@ function draw() {
     rect.height
   );
 
-
   const g =
     getBoardGeometry();
 
-
   drawBoardBackground(g);
-
   drawGrid(g);
-
   drawPlacedBlocks(g);
 
-
-  if (
-    game.current
-  ) {
-
+  if (game.current) {
     if (
       data.settings.ghost !== false
     ) {
-
       drawGhost(g);
-
     }
-
 
     drawPiece(
       g,
       game.current,
       1
     );
-
   }
 
-
   drawBoardFrame(g);
-
   drawSidePreviews();
-
 }
 
 
-/*
- * =========================================================
- * BOARD BACKGROUND
- * =========================================================
- */
-
 function drawBoardBackground(g) {
-
   const gradient =
     ctx.createLinearGradient(
       0,
       g.y,
       0,
-      g.y +
-      g.height
+      g.y + g.height
     );
-
 
   gradient.addColorStop(
     0,
     "#f4ecd9"
   );
 
-
   gradient.addColorStop(
     1,
     "#e7dbc0"
   );
 
-
   ctx.fillStyle =
     gradient;
-
 
   ctx.fillRect(
     g.x,
@@ -2602,126 +2298,77 @@ function drawBoardBackground(g) {
     g.width,
     g.height
   );
-
 }
 
 
-/*
- * =========================================================
- * GRID
- * =========================================================
- */
-
 function drawGrid(g) {
-
   ctx.save();
 
   ctx.strokeStyle =
-    "rgba(71,90,97,0.12)";
+    "rgba(71,90,97,.10)";
 
-  ctx.lineWidth =
-    1;
-
+  ctx.lineWidth = 1;
 
   for (
     let x = 0;
     x <= CONFIG.WIDTH;
     x++
   ) {
-
     const px =
       g.x +
-      x *
-      g.cell;
-
+      x * g.cell;
 
     ctx.beginPath();
-
-    ctx.moveTo(
-      px,
-      g.y
-    );
-
+    ctx.moveTo(px, g.y);
     ctx.lineTo(
       px,
-      g.y +
-      g.height
+      g.y + g.height
     );
-
     ctx.stroke();
-
   }
-
 
   for (
     let y = 0;
     y <= CONFIG.HEIGHT;
     y++
   ) {
-
     const py =
       g.y +
-      y *
-      g.cell;
-
+      y * g.cell;
 
     ctx.beginPath();
-
-    ctx.moveTo(
-      g.x,
-      py
-    );
-
+    ctx.moveTo(g.x, py);
     ctx.lineTo(
-      g.x +
-      g.width,
+      g.x + g.width,
       py
     );
-
     ctx.stroke();
-
   }
 
-
   ctx.restore();
-
 }
 
 
-/*
- * =========================================================
- * PLACED BLOCKS
- * =========================================================
- */
-
 function drawPlacedBlocks(g) {
-
   const hidden =
     CONFIG.HIDDEN_ROWS;
-
 
   for (
     let y = hidden;
     y < game.board.length;
     y++
   ) {
-
     for (
       let x = 0;
       x < CONFIG.WIDTH;
       x++
     ) {
-
       const type =
         game.board[y][x];
 
-
       if (!type) {
-
         continue;
-
       }
-
 
       drawCell(
         g,
@@ -2730,83 +2377,50 @@ function drawPlacedBlocks(g) {
         type,
         1
       );
-
     }
-
   }
-
 }
 
 
-/*
- * =========================================================
- * GHOST
- * =========================================================
- */
-
 function drawGhost(g) {
-
   const gy =
     ghostY(
       game.board,
       game.current
     );
 
-
-  const ghostPiece = {
-
-    ...game.current,
-
-    y:
-      gy
-
-  };
-
-
   drawPiece(
     g,
-    ghostPiece,
-    0.20
+    {
+      ...game.current,
+      y: gy
+    },
+    0.18
   );
-
 }
 
-
-/*
- * =========================================================
- * PIECE
- * =========================================================
- */
 
 function drawPiece(
   g,
   piece,
   alpha
 ) {
-
   const hidden =
     CONFIG.HIDDEN_ROWS;
-
 
   for (
     const cell of cells(piece)
   ) {
-
     const visibleY =
       cell.y -
       hidden;
 
-
     if (
       visibleY < 0 ||
-      visibleY >=
-      CONFIG.HEIGHT
+      visibleY >= CONFIG.HEIGHT
     ) {
-
       continue;
-
     }
-
 
     drawCell(
       g,
@@ -2815,17 +2429,9 @@ function drawPiece(
       piece.type,
       alpha
     );
-
   }
-
 }
 
-
-/*
- * =========================================================
- * CELL
- * =========================================================
- */
 
 function drawCell(
   g,
@@ -2834,154 +2440,101 @@ function drawCell(
   type,
   alpha
 ) {
-
   const px =
     g.x +
-    x *
-    g.cell;
-
+    x * g.cell;
 
   const py =
     g.y +
-    y *
-    g.cell;
-
+    y * g.cell;
 
   const size =
     g.cell;
 
+  const color =
+    COLORS[type] ||
+    "#888888";
 
   ctx.save();
 
   ctx.globalAlpha =
     alpha;
 
-
-  const color =
-    COLORS[type] ||
-    "#888";
-
-
   if (alpha < 1) {
-
     ctx.strokeStyle =
       color;
 
     ctx.lineWidth =
       Math.max(
         1,
-        size * 0.08
+        size * .07
       );
 
-
     ctx.strokeRect(
-      px +
-      size * 0.13,
-      py +
-      size * 0.13,
-      size * 0.74,
-      size * 0.74
+      px + size * .15,
+      py + size * .15,
+      size * .7,
+      size * .7
     );
 
-
     ctx.restore();
-
     return;
-
   }
-
 
   const gradient =
     ctx.createLinearGradient(
       px,
       py,
-      px +
-      size,
-      py +
-      size
+      px + size,
+      py + size
     );
-
 
   gradient.addColorStop(
     0,
-    lighten(
-      color,
-      0.15
-    )
+    lighten(color, .18)
   );
-
 
   gradient.addColorStop(
     1,
     color
   );
 
-
   ctx.fillStyle =
     gradient;
 
-
   roundRect(
     ctx,
-    px +
-    size * 0.07,
-    py +
-    size * 0.07,
-    size * 0.86,
-    size * 0.86,
-    size * 0.16
+    px + size * .07,
+    py + size * .07,
+    size * .86,
+    size * .86,
+    size * .16
   );
-
 
   ctx.fill();
 
-
   ctx.strokeStyle =
-    "rgba(255,255,255,0.30)";
-
+    "rgba(255,255,255,.30)";
 
   ctx.lineWidth =
     Math.max(
       1,
-      size * 0.045
+      size * .045
     );
-
-
-  roundRect(
-    ctx,
-    px +
-    size * 0.07,
-    py +
-    size * 0.07,
-    size * 0.86,
-    size * 0.86,
-    size * 0.16
-  );
-
 
   ctx.stroke();
 
   ctx.restore();
-
 }
 
 
-/*
- * =========================================================
- * FRAME
- * =========================================================
- */
-
 function drawBoardFrame(g) {
-
   ctx.save();
 
   ctx.strokeStyle =
-    "rgba(71,90,97,0.42)";
+    "rgba(71,90,97,.42)";
 
-  ctx.lineWidth =
-    2;
-
+  ctx.lineWidth = 2;
 
   ctx.strokeRect(
     g.x,
@@ -2990,263 +2543,146 @@ function drawBoardFrame(g) {
     g.height
   );
 
-
   ctx.restore();
-
 }
 
 
-/*
- * =========================================================
- * SIDE PREVIEWS
- * =========================================================
- */
+/* =========================================================
+   PREVIEWS
+========================================================= */
 
 function drawSidePreviews() {
-
   drawMiniPiece(
     holdCtx,
     holdCanvas,
     game.hold
   );
 
-
-  nextCanvases
-    .forEach(
-      (
-        nextCanvas,
-        index
-      ) => {
-
-        const type =
-          game.next[index];
-
-
-        drawMiniPiece(
-          nextCanvas.getContext(
-            "2d"
-          ),
-          nextCanvas,
-          type
-        );
-
-      }
-    );
-
+  nextCanvases.forEach(
+    (target, index) => {
+      drawMiniPiece(
+        target.getContext("2d"),
+        target,
+        game.next[index]
+      );
+    }
+  );
 }
 
-
-/*
- * =========================================================
- * MINI PIECE
- * =========================================================
- */
 
 function drawMiniPiece(
   context,
   targetCanvas,
   type
 ) {
-
   if (
     !context ||
     !targetCanvas
   ) {
-
     return;
-
   }
-
-
-  const width =
-    targetCanvas.width;
-
-
-  const height =
-    targetCanvas.height;
-
 
   context.clearRect(
     0,
     0,
-    width,
-    height
+    targetCanvas.width,
+    targetCanvas.height
   );
 
-
   if (!type) {
-
     return;
-
   }
 
-
   const shape =
-    getShape(
-      type,
-      0
-    );
+    getShape(type, 0);
 
-
-  let minX =
-    Infinity;
-
-  let minY =
-    Infinity;
-
-  let maxX =
-    -Infinity;
-
-  let maxY =
-    -Infinity;
-
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
 
   for (
     let y = 0;
     y < shape.length;
     y++
   ) {
-
     for (
       let x = 0;
       x < shape[y].length;
       x++
     ) {
-
       if (!shape[y][x]) {
-
         continue;
-
       }
 
-
       minX =
-        Math.min(
-          minX,
-          x
-        );
-
+        Math.min(minX, x);
 
       minY =
-        Math.min(
-          minY,
-          y
-        );
-
+        Math.min(minY, y);
 
       maxX =
-        Math.max(
-          maxX,
-          x
-        );
-
+        Math.max(maxX, x);
 
       maxY =
-        Math.max(
-          maxY,
-          y
-        );
-
+        Math.max(maxY, y);
     }
-
   }
 
-
   const cellsWidth =
-    maxX -
-    minX +
-    1;
-
+    maxX - minX + 1;
 
   const cellsHeight =
-    maxY -
-    minY +
-    1;
-
+    maxY - minY + 1;
 
   const size =
     Math.min(
       22,
-      width /
-        (
-          cellsWidth +
-          1
-        ),
-      height /
-        (
-          cellsHeight +
-          1
-        )
+      targetCanvas.width /
+        (cellsWidth + 1),
+      targetCanvas.height /
+        (cellsHeight + 1)
     );
-
 
   const offsetX =
     (
-      width -
-      cellsWidth *
-      size
-    ) /
-    2;
-
+      targetCanvas.width -
+      cellsWidth * size
+    ) / 2;
 
   const offsetY =
     (
-      height -
-      cellsHeight *
-      size
-    ) /
-    2;
-
+      targetCanvas.height -
+      cellsHeight * size
+    ) / 2;
 
   for (
     let y = 0;
     y < shape.length;
     y++
   ) {
-
     for (
       let x = 0;
       x < shape[y].length;
       x++
     ) {
-
       if (!shape[y][x]) {
-
         continue;
-
       }
-
 
       drawMiniCell(
         context,
         offsetX +
-        (
-          x -
-          minX
-        ) *
-        size,
+          (x - minX) * size,
         offsetY +
-        (
-          y -
-          minY
-        ) *
-        size,
+          (y - minY) * size,
         size,
         COLORS[type]
       );
-
     }
-
   }
-
 }
 
-
-/*
- * =========================================================
- * MINI CELL
- * =========================================================
- */
 
 function drawMiniCell(
   context,
@@ -3255,94 +2691,63 @@ function drawMiniCell(
   size,
   color
 ) {
-
   context.save();
 
   context.fillStyle =
     color;
 
-
   roundRect(
     context,
-    x +
-    size * 0.08,
-    y +
-    size * 0.08,
-    size * 0.84,
-    size * 0.84,
-    size * 0.15
+    x + size * .08,
+    y + size * .08,
+    size * .84,
+    size * .84,
+    size * .15
   );
-
 
   context.fill();
 
-
   context.strokeStyle =
-    "rgba(255,255,255,0.35)";
-
+    "rgba(255,255,255,.35)";
 
   context.lineWidth =
     Math.max(
       1,
-      size * 0.04
+      size * .04
     );
-
 
   context.stroke();
 
   context.restore();
-
 }
 
 
-/*
- * =========================================================
- * UI
- * =========================================================
- */
+/* =========================================================
+   UI
+========================================================= */
 
 function updateGameUI() {
-
   if (elements.modeLabel) {
-
     elements.modeLabel.textContent =
       game.modeConfig.name;
-
   }
-
 
   if (elements.levelLabel) {
-
     elements.levelLabel.textContent =
-      String(
-        game.level
-      );
-
+      String(game.level);
   }
-
 
   if (elements.scoreLabel) {
-
     elements.scoreLabel.textContent =
-      String(
-        game.score
-      );
-
+      String(game.score);
   }
-
 
   if (elements.linesLabel) {
-
     elements.linesLabel.textContent =
-      String(
-        game.lines
-      );
-
+      String(game.lines);
   }
 
-
   if (elements.comboLabel) {
-
     elements.comboLabel.textContent =
       String(
         Math.max(
@@ -3350,285 +2755,161 @@ function updateGameUI() {
           game.combo
         )
       );
-
   }
 
-
   if (elements.b2bLabel) {
-
     elements.b2bLabel.textContent =
       game.b2b
         ? "ON"
         : "0";
-
   }
 
-
-  if (
-    elements.scoreLabelMobile
-  ) {
-
+  if (elements.scoreLabelMobile) {
     elements.scoreLabelMobile.textContent =
-      String(
-        game.score
-      );
-
+      String(game.score);
   }
 
-
-  if (
-    elements.linesLabelMobile
-  ) {
-
+  if (elements.linesLabelMobile) {
     elements.linesLabelMobile.textContent =
-      String(
-        game.lines
-      );
-
+      String(game.lines);
   }
-
 
   drawSidePreviews();
-
 }
 
-
-/*
- * =========================================================
- * HOME
- * =========================================================
- */
 
 function updateHome() {
-
-  if (
-    elements.homeBestScore
-  ) {
-
+  if (elements.homeBestScore) {
     elements.homeBestScore.textContent =
       String(
-        data.stats.bestScore ||
-        0
+        data.stats.bestScore || 0
       );
-
   }
-
 }
 
 
-/*
- * =========================================================
- * RECORDS
- * =========================================================
- */
+/* =========================================================
+   RECORDS
+========================================================= */
 
 function renderRecords() {
-
-  if (
-    elements.gamesStat
-  ) {
-
+  if (elements.gamesStat) {
     elements.gamesStat.textContent =
       String(
-        data.stats.games ||
-        0
+        data.stats.games || 0
       );
-
   }
 
-
-  if (
-    elements.bestStat
-  ) {
-
+  if (elements.bestStat) {
     elements.bestStat.textContent =
       String(
-        data.stats.bestScore ||
-        0
+        data.stats.bestScore || 0
       );
-
   }
 
-
-  if (
-    elements.linesStat
-  ) {
-
+  if (elements.linesStat) {
     elements.linesStat.textContent =
       String(
-        data.stats.bestLines ||
-        0
+        data.stats.bestLines || 0
       );
-
   }
 
-
-  if (
-    elements.sprintStat
-  ) {
-
+  if (elements.sprintStat) {
     elements.sprintStat.textContent =
       formatTime(
         data.stats.bestSprint
       );
-
   }
 
-
-  if (
-    !elements.recordList
-  ) {
-
+  if (!elements.recordList) {
     return;
-
   }
-
 
   elements.recordList.innerHTML =
     "";
 
-
-  if (
-    !data.records.length
-  ) {
-
+  if (!data.records.length) {
     const empty =
       document.createElement(
         "div"
       );
 
-
     empty.className =
       "record-empty";
 
-
     empty.textContent =
-      "還沒有棋局紀錄。";
-
+      t("noRecords");
 
     elements.recordList.appendChild(
       empty
     );
 
-
     return;
-
   }
-
 
   data.records.forEach(
     record => {
-
       const item =
         document.createElement(
           "div"
         );
 
-
       item.className =
         "record-item";
-
 
       const date =
         new Date(
           record.date
         );
 
-
       const dateText =
         date.toLocaleDateString(
-          "zh-TW"
+          language
         );
 
-
       item.innerHTML = `
-
         <div>
-
           <strong>
-            ${escapeHTML(
-              record.mode
-            )}
+            ${escapeHTML(record.mode)}
           </strong>
-
           <span>
-            ${dateText}
+            ${escapeHTML(dateText)}
           </span>
-
         </div>
 
         <div>
-
           <strong>
             ${record.score}
           </strong>
-
           <span>
-            ${record.lines} 行
+            ${record.lines}
           </span>
-
         </div>
-
       `;
-
 
       elements.recordList.appendChild(
         item
       );
-
     }
   );
-
 }
 
 
-/*
- * =========================================================
- * KEYBOARD
- * =========================================================
- */
+/* =========================================================
+   KEYBOARD
+========================================================= */
 
 function setupKeyboard() {
-
   window.addEventListener(
     "keydown",
     event => {
-
       if (
-        currentScreen !==
-        "game"
+        currentScreen !== "game"
       ) {
-
         return;
-
       }
-
 
       unlockAudio();
-
-
-      /*
-       * Prevent browser scrolling.
-       */
-
-      if (
-        [
-          "ArrowLeft",
-          "ArrowRight",
-          "ArrowDown",
-          "ArrowUp",
-          " ",
-          "Shift",
-          "Control"
-        ].includes(
-          event.key
-        )
-      ) {
-
-        event.preventDefault();
-
-      }
-
 
       if (
         matches(
@@ -3636,31 +2917,14 @@ function setupKeyboard() {
           event.key
         )
       ) {
-
+        event.preventDefault();
         pauseGame();
-
         return;
-
       }
 
-
-      if (
-        game.paused
-      ) {
-
+      if (game.paused) {
         return;
-
       }
-
-
-      /*
-       * Ignore repeated keydown for
-       * one-shot actions.
-       */
-
-      const oneShot =
-        event.repeat;
-
 
       if (
         matches(
@@ -3668,29 +2932,10 @@ function setupKeyboard() {
           event.key
         )
       ) {
-
-        if (
-          !game.heldKeys.has(
-            "left"
-          )
-        ) {
-
-          game.heldKeys.add(
-            "left"
-          );
-
-          moveHorizontal(-1);
-
-          startRepeat(
-            "left"
-          );
-
-        }
-
+        event.preventDefault();
+        moveHorizontal(-1);
         return;
-
       }
-
 
       if (
         matches(
@@ -3698,29 +2943,10 @@ function setupKeyboard() {
           event.key
         )
       ) {
-
-        if (
-          !game.heldKeys.has(
-            "right"
-          )
-        ) {
-
-          game.heldKeys.add(
-            "right"
-          );
-
-          moveHorizontal(1);
-
-          startRepeat(
-            "right"
-          );
-
-        }
-
+        event.preventDefault();
+        moveHorizontal(1);
         return;
-
       }
-
 
       if (
         matches(
@@ -3728,16 +2954,11 @@ function setupKeyboard() {
           event.key
         )
       ) {
-
-        game.softDropping =
-          true;
-
+        event.preventDefault();
+        game.softDropping = true;
         softDrop();
-
         return;
-
       }
-
 
       if (
         matches(
@@ -3745,17 +2966,10 @@ function setupKeyboard() {
           event.key
         )
       ) {
-
-        if (!oneShot) {
-
-          rotate(1);
-
-        }
-
+        event.preventDefault();
+        rotate(1);
         return;
-
       }
-
 
       if (
         matches(
@@ -3763,17 +2977,10 @@ function setupKeyboard() {
           event.key
         )
       ) {
-
-        if (!oneShot) {
-
-          rotate(-1);
-
-        }
-
+        event.preventDefault();
+        rotate(-1);
         return;
-
       }
-
 
       if (
         matches(
@@ -3781,17 +2988,10 @@ function setupKeyboard() {
           event.key
         )
       ) {
-
-        if (!oneShot) {
-
-          hardDrop();
-
-        }
-
+        event.preventDefault();
+        hardDrop();
         return;
-
       }
-
 
       if (
         matches(
@@ -3799,408 +2999,598 @@ function setupKeyboard() {
           event.key
         )
       ) {
-
-        if (!oneShot) {
-
-          holdPiece();
-
-        }
-
+        event.preventDefault();
+        holdPiece();
       }
-
     }
   );
-
 
   window.addEventListener(
     "keyup",
     event => {
-
-      if (
-        matches(
-          KEYS.left,
-          event.key
-        )
-      ) {
-
-        game.heldKeys.delete(
-          "left"
-        );
-
-        stopRepeat();
-
-      }
-
-
-      if (
-        matches(
-          KEYS.right,
-          event.key
-        )
-      ) {
-
-        game.heldKeys.delete(
-          "right"
-        );
-
-        stopRepeat();
-
-      }
-
-
       if (
         matches(
           KEYS.down,
           event.key
         )
       ) {
-
         game.softDropping =
           false;
-
       }
-
     }
   );
-
-
-  window.addEventListener(
-    "blur",
-    () => {
-
-      game.heldKeys.clear();
-
-      game.softDropping =
-        false;
-
-      stopRepeat();
-
-    }
-  );
-
 }
 
 
-/*
- * =========================================================
- * MOBILE CONTROLS
- * =========================================================
- */
-
-function setupMobileControls() {
-
-  $$(".control-button")
-    .forEach(button => {
-
-      const action =
-        button.dataset.action;
-
-
-      button.style.touchAction =
-        "none";
-
-
-      button.addEventListener(
-        "pointerdown",
-        event => {
-
-          event.preventDefault();
-
-          unlockAudio();
-
-
-          try {
-
-            button.setPointerCapture(
-              event.pointerId
-            );
-
-          } catch {}
-
-
-          if (
-            action === "left"
-          ) {
-
-            moveHorizontal(-1);
-
-            startRepeat(
-              "left"
-            );
-
-          } else if (
-            action === "right"
-          ) {
-
-            moveHorizontal(1);
-
-            startRepeat(
-              "right"
-            );
-
-          } else if (
-            action === "down"
-          ) {
-
-            game.softDropping =
-              true;
-
-            softDrop();
-
-          } else if (
-            action === "rotate"
-          ) {
-
-            rotate(1);
-
-          } else if (
-            action === "rotateCCW"
-          ) {
-
-            rotate(-1);
-
-          } else if (
-            action === "drop"
-          ) {
-
-            hardDrop();
-
-          } else if (
-            action === "hold"
-          ) {
-
-            holdPiece();
-
-          }
-
-        },
-        {
-          passive:
-            false
-        }
-      );
-
-
-      const release =
-        event => {
-
-          event?.preventDefault?.();
-
-          stopRepeat();
-
-          if (
-            action === "down"
-          ) {
-
-            game.softDropping =
-              false;
-
-          }
-
-        };
-
-
-      button.addEventListener(
-        "pointerup",
-        release,
-        {
-          passive:
-            false
-        }
-      );
-
-
-      button.addEventListener(
-        "pointercancel",
-        release,
-        {
-          passive:
-            false
-        }
-      );
-
-
-      button.addEventListener(
-        "lostpointercapture",
-        release,
-        {
-          passive:
-            false
-        }
-      );
-
-    });
-
-}
-
-
-/*
- * =========================================================
- * DAS / ARR
- * =========================================================
- */
-
-function startRepeat(
-  action
-) {
-
-  stopRepeat();
-
-
-  game.touchAction =
-    action;
-
-
-  game.touchRepeat =
-    window.setTimeout(
-      () => {
-
-        game.touchRepeat =
-          window.setInterval(
-            () => {
-
-              if (
-                !canPlay()
-              ) {
-
-                return;
-
-              }
-
-
-              if (
-                action ===
-                "left"
-              ) {
-
-                moveHorizontal(-1);
-
-              } else {
-
-                moveHorizontal(1);
-
-              }
-
-            },
-            Math.max(
-              1,
-              CONFIG.ARR
-            )
-          );
-
-      },
-      Math.max(
-        1,
-        CONFIG.DAS
-      )
-    );
-
-}
-
-
-function stopRepeat() {
-
-  if (
-    game.touchRepeat !==
-    null
-  ) {
-
-    clearTimeout(
-      game.touchRepeat
-    );
-
-    clearInterval(
-      game.touchRepeat
-    );
-
-  }
-
-
-  game.touchRepeat =
-    null;
-
-  game.touchAction =
-    null;
-
-}
-
-
-/*
- * =========================================================
- * CANVAS POINTER
- * =========================================================
- */
-
-function setupCanvasPointer() {
-
+/* =========================================================
+   TOUCH ENGINE
+========================================================= */
+
+function setupTouchControls() {
   if (!canvas) {
-
     return;
-
   }
-
-
-  canvas.style.touchAction =
-    "none";
-
 
   canvas.addEventListener(
     "pointerdown",
-    () => {
-
-      unlockAudio();
-
-      focusGameCanvas();
-
-    },
+    onPointerDown,
     {
-      passive:
-        true
+      passive: false
     }
   );
 
+  canvas.addEventListener(
+    "pointermove",
+    onPointerMove,
+    {
+      passive: false
+    }
+  );
+
+  canvas.addEventListener(
+    "pointerup",
+    onPointerUp,
+    {
+      passive: false
+    }
+  );
+
+  canvas.addEventListener(
+    "pointercancel",
+    onPointerCancel,
+    {
+      passive: false
+    }
+  );
+
+  canvas.addEventListener(
+    "pointerleave",
+    event => {
+      if (
+        game.touch.active &&
+        event.pointerType === "mouse"
+      ) {
+        onPointerCancel(event);
+      }
+    },
+    {
+      passive: false
+    }
+  );
+
+  canvas.addEventListener(
+    "contextmenu",
+    event => {
+      event.preventDefault();
+    }
+  );
 }
 
 
-/*
- * =========================================================
- * SETTINGS EVENTS
- * =========================================================
- */
+function onPointerDown(event) {
+  if (
+    currentScreen !== "game"
+  ) {
+    return;
+  }
+
+  if (
+    !game.running ||
+    game.over
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+
+  unlockAudio();
+
+  try {
+    canvas.setPointerCapture(
+      event.pointerId
+    );
+  } catch {}
+
+  stopTouchTimers();
+
+  const now =
+    performance.now();
+
+  game.touch.active =
+    true;
+
+  game.touch.pointerId =
+    event.pointerId;
+
+  game.touch.startX =
+    event.clientX;
+
+  game.touch.startY =
+    event.clientY;
+
+  game.touch.lastX =
+    event.clientX;
+
+  game.touch.lastY =
+    event.clientY;
+
+  game.touch.startTime =
+    now;
+
+  game.touch.moved =
+    false;
+
+  if (
+    game.paused
+  ) {
+    return;
+  }
+
+  game.touch.holdTimer =
+    window.setTimeout(
+      () => {
+        if (
+          !game.touch.active ||
+          game.touch.moved
+        ) {
+          return;
+        }
+
+        if (
+          game.softDropping
+        ) {
+          return;
+        }
+
+        game.softDropping =
+          true;
+
+        softDrop();
+
+        game.touch.repeatTimer =
+          window.setInterval(
+            () => {
+              if (
+                !game.touch.active ||
+                !game.softDropping
+              ) {
+                return;
+              }
+
+              softDrop();
+            },
+            55
+          );
+      },
+      220
+    );
+}
+
+
+function onPointerMove(event) {
+  if (
+    !game.touch.active ||
+    event.pointerId !==
+      game.touch.pointerId
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (game.paused) {
+    return;
+  }
+
+  const dx =
+    event.clientX -
+    game.touch.lastX;
+
+  const dy =
+    event.clientY -
+    game.touch.lastY;
+
+  const totalX =
+    event.clientX -
+    game.touch.startX;
+
+  const totalY =
+    event.clientY -
+    game.touch.startY;
+
+  const absTotalX =
+    Math.abs(totalX);
+
+  const absTotalY =
+    Math.abs(totalY);
+
+  if (
+    absTotalX > 10 ||
+    absTotalY > 10
+  ) {
+    game.touch.moved =
+      true;
+
+    clearTimeout(
+      game.touch.holdTimer
+    );
+  }
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+  const threshold =
+    Math.max(
+      18,
+      Math.min(
+        42,
+        rect.width / 12
+      )
+    );
+
+  if (
+    Math.abs(dx) >= threshold
+  ) {
+    const count =
+      Math.max(
+        1,
+        Math.floor(
+          Math.abs(dx) /
+          threshold
+        )
+      );
+
+    const direction =
+      dx > 0 ? 1 : -1;
+
+    for (
+      let i = 0;
+      i < count;
+      i++
+    ) {
+      moveHorizontal(
+        direction
+      );
+    }
+
+    game.touch.lastX =
+      event.clientX;
+  }
+
+  if (
+    totalY >
+    threshold
+  ) {
+    if (
+      Math.abs(totalY) >
+      Math.abs(totalX) * .75
+    ) {
+      if (
+        game.softDropping
+      ) {
+        game.softDropping =
+          false;
+      }
+
+      hardDrop();
+
+      game.touch.moved =
+        true;
+
+      game.touch.startX =
+        event.clientX;
+
+      game.touch.startY =
+        event.clientY;
+
+      game.touch.lastX =
+        event.clientX;
+
+      game.touch.lastY =
+        event.clientY;
+
+      return;
+    }
+  }
+
+  if (
+    totalY <
+    -threshold
+  ) {
+    if (
+      Math.abs(totalY) >
+      Math.abs(totalX) * .75
+    ) {
+      holdPiece();
+
+      game.touch.moved =
+        true;
+
+      game.touch.startX =
+        event.clientX;
+
+      game.touch.startY =
+        event.clientY;
+
+      game.touch.lastX =
+        event.clientX;
+
+      game.touch.lastY =
+        event.clientY;
+
+      return;
+    }
+  }
+
+  game.touch.lastY =
+    event.clientY;
+}
+
+
+function onPointerUp(event) {
+  if (
+    !game.touch.active ||
+    event.pointerId !==
+      game.touch.pointerId
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const duration =
+    performance.now() -
+    game.touch.startTime;
+
+  const dx =
+    event.clientX -
+    game.touch.startX;
+
+  const dy =
+    event.clientY -
+    game.touch.startY;
+
+  const distance =
+    Math.hypot(
+      dx,
+      dy
+    );
+
+  const wasMoving =
+    game.touch.moved ||
+    distance > 16;
+
+  stopTouchTimers();
+
+  if (
+    !game.paused &&
+    !wasMoving &&
+    duration < 350
+  ) {
+    const rect =
+      canvas.getBoundingClientRect();
+
+    const localX =
+      event.clientX -
+      rect.left;
+
+    const direction =
+      localX <
+      rect.width / 2
+        ? -1
+        : 1;
+
+    rotate(direction);
+  }
+
+  game.touch.active =
+    false;
+
+  try {
+    canvas.releasePointerCapture(
+      event.pointerId
+    );
+  } catch {}
+}
+
+
+function onPointerCancel(event) {
+  if (
+    !game.touch.active
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+
+  game.softDropping =
+    false;
+
+  stopTouchTimers();
+
+  game.touch.active =
+    false;
+
+  try {
+    canvas.releasePointerCapture(
+      game.touch.pointerId
+    );
+  } catch {}
+}
+
+
+function stopTouchTimers() {
+  clearTimeout(
+    game.touch.holdTimer
+  );
+
+  clearInterval(
+    game.touch.repeatTimer
+  );
+
+  game.touch.holdTimer =
+    null;
+
+  game.touch.repeatTimer =
+    null;
+
+  game.softDropping =
+    false;
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function setupNavigation() {
+  elements.startButton?.addEventListener(
+    "click",
+    () => {
+      unlockAudio();
+      showScreen("setup");
+    }
+  );
+
+  elements.recordsButton?.addEventListener(
+    "click",
+    () => {
+      showScreen("records");
+    }
+  );
+
+  elements.settingsButton?.addEventListener(
+    "click",
+    () => {
+      showScreen("settings");
+    }
+  );
+
+  elements.beginButton?.addEventListener(
+    "click",
+    () => {
+      startGame(
+        selectedMode
+      );
+    }
+  );
+
+  elements.pauseButton?.addEventListener(
+    "click",
+    () => {
+      pauseGame();
+    }
+  );
+
+  elements.resumeButton?.addEventListener(
+    "click",
+    () => {
+      resumeGame();
+    }
+  );
+
+  elements.againButton?.addEventListener(
+    "click",
+    () => {
+      startGame(
+        game.mode
+      );
+    }
+  );
+
+  elements.homeButton?.addEventListener(
+    "click",
+    () => {
+      goHome();
+    }
+  );
+
+  elements.backButton?.addEventListener(
+    "click",
+    () => {
+      goHome();
+    }
+  );
+
+  elements.menuButton?.addEventListener(
+    "click",
+    () => {
+      if (
+        currentScreen ===
+        "game"
+      ) {
+        pauseGame();
+        return;
+      }
+
+      showScreen("settings");
+    }
+  );
+
+  elements.clearRecordsButton?.addEventListener(
+    "click",
+    () => {
+      clearRecords(data);
+
+      showToast(
+        t("recordsCleared")
+      );
+
+      renderRecords();
+      updateHome();
+    }
+  );
+}
+
+
+/* =========================================================
+   SETTINGS EVENTS
+========================================================= */
 
 function setupSettingsEvents() {
-
   elements.soundToggle?.addEventListener(
     "change",
     () => {
-
       updateSetting(
         "sound",
         elements.soundToggle.checked
       );
 
-
       if (
         elements.soundToggle.checked
       ) {
-
         unlockAudio();
-
       }
-
     }
   );
-
 
   elements.musicToggle?.addEventListener(
     "change",
     () => {
-
       updateSetting(
         "music",
         elements.musicToggle.checked
       );
-
 
       window.GomokuAudio
         ?.setMusicEnabled
@@ -4208,405 +3598,235 @@ function setupSettingsEvents() {
           elements.musicToggle.checked
         );
 
-
       if (
         elements.musicToggle.checked
       ) {
-
         unlockAudio();
-
       }
-
     }
   );
-
 
   elements.ghostToggle?.addEventListener(
     "change",
     () => {
-
       updateSetting(
         "ghost",
         elements.ghostToggle.checked
       );
 
       draw();
-
     }
   );
-
 
   elements.hapticToggle?.addEventListener(
     "change",
     () => {
-
       updateSetting(
         "haptic",
         elements.hapticToggle.checked
       );
-
     }
   );
-
 
   elements.motionToggle?.addEventListener(
     "change",
     () => {
-
       updateSetting(
         "motion",
         elements.motionToggle.checked
       );
-
     }
   );
-
 
   elements.themeSelect?.addEventListener(
     "change",
     () => {
-
       updateSetting(
         "theme",
         elements.themeSelect.value
       );
 
       applyTheme();
-
     }
   );
 
+  installLanguageSelector();
 }
 
 
-/*
- * =========================================================
- * NAVIGATION
- * =========================================================
- */
+/* =========================================================
+   LANGUAGE SELECTOR
+========================================================= */
 
-function setupNavigation() {
+function installLanguageSelector() {
+  const settingsList =
+    document.querySelector(
+      ".settings-list"
+    );
 
-  elements.startButton?.addEventListener(
-    "click",
+  if (!settingsList) {
+    return;
+  }
+
+  const existing =
+    document.querySelector(
+      "#kasaneLanguageRow"
+    );
+
+  existing?.remove();
+
+  const row =
+    document.createElement("label");
+
+  row.className =
+    "setting-row";
+
+  row.id =
+    "kasaneLanguageRow";
+
+  row.innerHTML = `
+    <span>
+      <strong>Language</strong>
+      <small>繁中 / 简中 / English / 日本語 / 한국어</small>
+    </span>
+
+    <select
+      id="kasaneLanguageSelect"
+      aria-label="Language"
+    >
+      <option value="zh-TW">繁中</option>
+      <option value="zh-CN">简中</option>
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+      <option value="ko">한국어</option>
+    </select>
+  `;
+
+  settingsList.appendChild(row);
+
+  const select =
+    row.querySelector(
+      "#kasaneLanguageSelect"
+    );
+
+  select.value =
+    language;
+
+  select.addEventListener(
+    "change",
     () => {
-
-      showScreen(
-        "setup"
+      setLanguage(
+        select.value
       );
-
     }
   );
-
-
-  elements.recordsButton?.addEventListener(
-    "click",
-    () => {
-
-      showScreen(
-        "records"
-      );
-
-    }
-  );
-
-
-  elements.settingsButton?.addEventListener(
-    "click",
-    () => {
-
-      showScreen(
-        "settings"
-      );
-
-    }
-  );
-
-
-  elements.beginButton?.addEventListener(
-    "click",
-    () => {
-
-      startGame(
-        selectedMode
-      );
-
-    }
-  );
-
-
-  elements.pauseButton?.addEventListener(
-    "click",
-    () => {
-
-      pauseGame();
-
-    }
-  );
-
-
-  elements.resumeButton?.addEventListener(
-    "click",
-    () => {
-
-      resumeGame();
-
-    }
-  );
-
-
-  elements.againButton?.addEventListener(
-    "click",
-    () => {
-
-      startGame(
-        game.mode
-      );
-
-    }
-  );
-
-
-  elements.homeButton?.addEventListener(
-    "click",
-    () => {
-
-      goHome();
-
-    }
-  );
-
-
-  elements.backButton?.addEventListener(
-    "click",
-    () => {
-
-      if (
-        currentScreen ===
-        "game"
-      ) {
-
-        pauseGame();
-
-        return;
-
-      }
-
-
-      showScreen(
-        "home"
-      );
-
-    }
-  );
-
-
-  elements.menuButton?.addEventListener(
-    "click",
-    () => {
-
-      if (
-        currentScreen ===
-        "game"
-      ) {
-
-        pauseGame();
-
-        return;
-
-      }
-
-
-      showScreen(
-        "settings"
-      );
-
-    }
-  );
-
-
-  elements.clearRecordsButton?.addEventListener(
-    "click",
-    () => {
-
-      clearRecords(
-        data
-      );
-
-
-      showToast(
-        "紀錄已清除"
-      );
-
-
-      renderRecords();
-
-      updateHome();
-
-    }
-  );
-
 }
 
 
-/*
- * =========================================================
- * AUDIO BRIDGE
- * =========================================================
- */
+/* =========================================================
+   AUDIO
+========================================================= */
 
 function installAudioBridge() {
-
   window.KasaneStartGame =
-    () => {
-
-      unlockAudio();
-
-    };
-
+    () => unlockAudio();
 
   window.KasaneData =
     data;
-
 }
 
 
-/*
- * =========================================================
- * HAPTIC
- * =========================================================
- */
+/* =========================================================
+   HAPTIC
+========================================================= */
 
 function vibrate(
   duration
 ) {
-
   if (
     data.settings.haptic ===
     false
   ) {
-
     return;
-
   }
-
 
   if (
     typeof navigator.vibrate !==
     "function"
   ) {
-
     return;
-
   }
 
-
   try {
-
     navigator.vibrate(
       duration
     );
-
   } catch {}
-
 }
 
 
-/*
- * =========================================================
- * TOAST
- * =========================================================
- */
+/* =========================================================
+   TOAST
+========================================================= */
 
 let toastTimer =
   null;
 
-
 function showToast(
   message
 ) {
-
-  if (
-    !elements.toast
-  ) {
-
+  if (!elements.toast) {
     return;
-
   }
-
 
   elements.toast.textContent =
     message;
-
 
   elements.toast.classList.add(
     "visible"
   );
 
-
   clearTimeout(
     toastTimer
   );
 
-
   toastTimer =
     setTimeout(
       () => {
-
         elements.toast.classList.remove(
           "visible"
         );
-
       },
       1300
     );
-
 }
 
 
-/*
- * =========================================================
- * FOCUS
- * =========================================================
- */
+/* =========================================================
+   FOCUS
+========================================================= */
 
 function focusGameCanvas() {
-
-  if (!canvas) {
-
-    return;
-
-  }
-
-
   try {
-
-    canvas.focus({
-      preventScroll:
-        true
+    canvas?.focus({
+      preventScroll: true
     });
-
   } catch {}
-
 }
 
 
-/*
- * =========================================================
- * HELPERS
- * =========================================================
- */
+/* =========================================================
+   HELPERS
+========================================================= */
 
 function matches(
   keys,
   value
 ) {
-
   return (
     Array.isArray(keys) &&
     keys.includes(value)
   );
-
 }
 
 
@@ -4618,14 +3838,12 @@ function roundRect(
   height,
   radius
 ) {
-
   const r =
     Math.min(
       radius,
       width / 2,
       height / 2
     );
-
 
   context.beginPath();
 
@@ -4667,7 +3885,6 @@ function roundRect(
   );
 
   context.closePath();
-
 }
 
 
@@ -4675,23 +3892,11 @@ function lighten(
   hex,
   amount
 ) {
-
   const value =
-    String(hex)
-      .replace(
-        "#",
-        ""
-      );
-
-
-  if (
-    value.length !== 6
-  ) {
-
-    return hex;
-
-  }
-
+    hex.replace(
+      "#",
+      ""
+    );
 
   const r =
     parseInt(
@@ -4699,13 +3904,11 @@ function lighten(
       16
     );
 
-
   const g =
     parseInt(
       value.slice(2, 4),
       16
     );
-
 
   const b =
     parseInt(
@@ -4713,58 +3916,49 @@ function lighten(
       16
     );
 
-
   const nr =
     Math.min(
       255,
       Math.round(
         r +
-        (
-          255 -
-          r
-        ) *
+        (255 - r) *
         amount
       )
     );
-
 
   const ng =
     Math.min(
       255,
       Math.round(
         g +
-        (
-          255 -
-          g
-        ) *
+        (255 - g) *
         amount
       )
     );
-
 
   const nb =
     Math.min(
       255,
       Math.round(
         b +
-        (
-          255 -
-          b
-        ) *
+        (255 - b) *
         amount
       )
     );
 
-
-  return `rgb(${nr}, ${ng}, ${nb})`;
-
+  return `
+    rgb(
+      ${nr},
+      ${ng},
+      ${nb}
+    )
+  `;
 }
 
 
 function escapeHTML(
   value
 ) {
-
   return String(value)
     .replaceAll(
       "&",
@@ -4786,117 +3980,120 @@ function escapeHTML(
       "'",
       "&#039;"
     );
-
 }
 
 
-/*
- * =========================================================
- * RESIZE
- * =========================================================
- */
+/* =========================================================
+   RESIZE
+========================================================= */
 
 window.addEventListener(
   "resize",
   () => {
-
     if (
       currentScreen ===
       "game"
     ) {
-
       resizeCanvas();
-
       draw();
-
     }
-
   },
   {
-    passive:
-      true
+    passive: true
   }
 );
 
 
-/*
- * =========================================================
- * VISIBILITY
- * =========================================================
- */
+/* =========================================================
+   ORIENTATION
+========================================================= */
+
+window.addEventListener(
+  "orientationchange",
+  () => {
+    window.setTimeout(
+      () => {
+        resizeCanvas();
+        draw();
+      },
+      120
+    );
+  },
+  {
+    passive: true
+  }
+);
+
+
+/* =========================================================
+   VISIBILITY
+========================================================= */
 
 document.addEventListener(
   "visibilitychange",
   () => {
-
     if (
       document.hidden &&
       game.running &&
       !game.paused &&
       !game.over
     ) {
-
       pauseGame();
-
     }
-
   }
 );
 
 
-/*
- * =========================================================
- * PAGE HIDE / MOBILE SAFETY
- * =========================================================
- */
+/* =========================================================
+   SYSTEM THEME
+========================================================= */
 
-window.addEventListener(
-  "pagehide",
+const media =
+  window.matchMedia?.(
+    "(prefers-color-scheme: dark)"
+  );
+
+media?.addEventListener?.(
+  "change",
   () => {
-
-    game.softDropping =
-      false;
-
-    game.heldKeys.clear();
-
-    stopRepeat();
-
+    if (
+      data.settings.theme ===
+      "system"
+    ) {
+      applyTheme();
+    }
   }
 );
 
 
-/*
- * =========================================================
- * INITIALIZE
- * =========================================================
- */
+/* =========================================================
+   INIT
+========================================================= */
 
 function init() {
+  installTouchUI();
 
-  initializeSettings();
+  syncSettings();
+  applyTheme();
 
   setupModeSelection();
-
   setupNavigation();
-
   setupKeyboard();
-
-  setupMobileControls();
-
-  setupCanvasPointer();
-
+  setupTouchControls();
   setupSettingsEvents();
-
   installAudioBridge();
 
-  updateHome();
+  applyI18n();
 
+  updateHome();
   renderRecords();
 
-  resizeCanvas();
-
-  draw();
-
+  requestAnimationFrame(
+    () => {
+      resizeCanvas();
+      draw();
+    }
+  );
 }
 
 
@@ -4904,18 +4101,13 @@ if (
   document.readyState ===
   "loading"
 ) {
-
   document.addEventListener(
     "DOMContentLoaded",
     init,
     {
-      once:
-        true
+      once: true
     }
   );
-
 } else {
-
   init();
-
 }
