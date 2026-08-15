@@ -60,6 +60,11 @@ input:focus-visible {
   outline-offset: 3px;
 }
 
+button:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
 .app-shell {
   min-height: 100vh;
 }
@@ -285,6 +290,18 @@ h2 {
   border: 1px solid var(--line);
   color: var(--ink);
   cursor: pointer;
+  transition:
+    transform .14s ease,
+    border-color .14s ease,
+    box-shadow .14s ease;
+}
+
+.mode-card:hover {
+  transform: translateY(-1px);
+}
+
+.mode-card:active {
+  transform: scale(.985);
 }
 
 .mode-card strong,
@@ -454,6 +471,16 @@ h2 {
   touch-action: none;
 }
 
+/*
+ * =========================================================
+ * PAUSE OVERLAY
+ * =========================================================
+ *
+ * IMPORTANT:
+ * HTML uses the native [hidden] attribute.
+ * CSS display:grid would otherwise override it.
+ */
+
 .pause-overlay {
   position: absolute;
   inset: 10px;
@@ -467,8 +494,17 @@ h2 {
   z-index: 5;
 }
 
+.pause-overlay[hidden] {
+  display: none !important;
+}
+
 .pause-overlay strong {
   font-size: 30px;
+}
+
+.pause-overlay .secondary-button,
+.pause-overlay .primary-button {
+  min-width: 150px;
 }
 
 .mobile-controls,
@@ -547,17 +583,46 @@ h2 {
   margin-bottom: 18px;
 }
 
-.record {
+/*
+ * Support both names so old/new app.js
+ * record rendering remains compatible.
+ */
+
+.record,
+.record-item {
   display: flex;
   justify-content: space-between;
+  gap: 18px;
   padding: 16px;
   border: 1px solid var(--line);
   background: var(--surface);
   border-radius: 16px;
 }
 
-.record small {
+.record-item > div,
+.record > div {
+  display: grid;
+  gap: 5px;
+}
+
+.record small,
+.record-item span {
   color: var(--muted);
+  font-size: 12px;
+}
+
+.record-item strong,
+.record strong {
+  color: var(--ink);
+}
+
+.record-empty {
+  padding: 30px 20px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 18px;
+  background: rgba(247,243,232,.55);
 }
 
 .toast {
@@ -572,17 +637,28 @@ h2 {
   background: rgba(71,90,97,.94);
   color: white;
   font-size: 13px;
-  transition: .2s ease;
+  transition:
+    opacity .2s ease,
+    transform .2s ease;
   z-index: 100;
 }
 
-.toast.show {
+.toast.show,
+.toast.visible {
   opacity: 1;
   transform: translate(-50%, 0);
 }
 
 .gomoku-pressable {
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.control-button {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 @media (max-width: 850px) {
@@ -641,6 +717,14 @@ h2 {
     color: var(--ink);
     font-weight: 700;
     touch-action: manipulation;
+    cursor: pointer;
+    transition:
+      transform .12s ease,
+      background .12s ease;
+  }
+
+  .control-button:active {
+    transform: scale(.94);
   }
 
   .control-button.hard-drop {
@@ -653,16 +737,29 @@ h2 {
     width: 100%;
   }
 
-}
-
-@media (max-width: 500px) {
-
-  .topbar {
-    grid-template-columns: 54px 1fr 54px;
+  .pause-overlay {
+    inset: 8px;
   }
 
+}
+
+@media (max-width: 600px) {
+
   .screen-content {
-    margin: 35px auto;
+    width: min(
+      680px,
+      calc(100% - 28px)
+    );
+
+    margin: 30px auto;
+  }
+
+  .home-content,
+  .result-content {
+    width: min(
+      560px,
+      calc(100% - 28px)
+    );
   }
 
   .mode-grid {
@@ -673,23 +770,51 @@ h2 {
     grid-template-columns: 1fr;
   }
 
-  .mobile-controls {
-    grid-template-columns: repeat(6, 1fr);
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 
-  .control-button {
-    font-size: 13px;
+  .mobile-controls {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .control-button.hard-drop {
+    grid-column: span 2;
+  }
+
+  .board-frame {
+    border-radius: 18px;
+    padding: 7px;
+  }
+
+  #gameCanvas {
+    border-radius: 12px;
+  }
+
+  .pause-overlay {
+    inset: 7px;
+    border-radius: 12px;
   }
 
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (max-width: 400px) {
 
-  *,
-  *::before,
-  *::after {
-    animation-duration: .01ms !important;
-    transition-duration: .01ms !important;
+  .topbar {
+    grid-template-columns: 50px 1fr 50px;
+  }
+
+  .brand {
+    font-size: 14px;
+  }
+
+  .mobile-controls {
+    gap: 5px;
+  }
+
+  .control-button {
+    min-height: 45px;
+    font-size: 13px;
   }
 
 }
