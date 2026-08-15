@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#e8d5ad"
+  >
+
+  <meta
+    name="description"
+    content="A refined Gomoku-style Tetris game."
+  >
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="default"
+  >
+
+  <title>Tetris</title>
+
+  <link
+    rel="stylesheet"
+    href="./style.css"
+  >
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <header class="topbar">
+
+    <button
+      class="icon-button"
+      id="backButton"
+      type="button"
+      aria-label="返回"
+    >
+      <span>‹</span>
+    </button>
+
+    <div class="brand">
+
+      <span
+        class="brand-mark"
+        aria-hidden="true"
+      ></span>
+
+      <span class="brand-name">
+        Tetris
+      </span>
+
+    </div>
+
+    <button
+      class="icon-button"
+      id="menuButton"
+      type="button"
+      aria-label="選單"
+    >
+      <span>•••</span>
+    </button>
+
+  </header>
+
+
+  <main>
+
+    <!-- HOME -->
+
+    <section
+      class="screen active"
+      id="homeScreen"
+    >
+
+      <div class="home-content">
+
+        <div class="hero-tetris">
+
+          <div class="hero-block block-i"></div>
+          <div class="hero-block block-t"></div>
+          <div class="hero-block block-l"></div>
+
+        </div>
+
+        <h1>
+          Tetris
+        </h1>
+
+        <p class="subtitle">
+          一格一格，慢慢堆成自己的節奏。
+        </p>
+
+        <div class="home-actions">
+
+          <button
+            class="primary-button"
+            id="startButton"
+            type="button"
+          >
+            開始遊戲
+          </button>
+
+          <button
+            class="secondary-button"
+            id="recordsButton"
+            type="button"
+          >
+            紀錄
+          </button>
+
+          <button
+            class="secondary-button"
+            id="settingsButton"
+            type="button"
+          >
+            設定
+          </button>
+
+        </div>
+
+        <div
+          class="home-status"
+          id="bestCard"
+        >
+
+          <span class="status-label">
+            最高分
+          </span>
+
+          <strong id="homeBestScore">
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- SETUP -->
+
+    <section
+      class="screen"
+      id="setupScreen"
+    >
+
+      <div class="screen-content">
+
+        <h2>
+          遊戲模式
+        </h2>
+
+        <div class="mode-grid">
+
+          <button
+            class="mode-card selected"
+            data-mode="marathon"
+            type="button"
+          >
+            <strong>Marathon</strong>
+            <span>一路升級，挑戰極限</span>
+          </button>
+
+          <button
+            class="mode-card"
+            data-mode="sprint"
+            type="button"
+          >
+            <strong>Sprint</strong>
+            <span>40 行速度挑戰</span>
+          </button>
+
+          <button
+            class="mode-card"
+            data-mode="ultra"
+            type="button"
+          >
+            <strong>Ultra</strong>
+            <span>120 秒最高分</span>
+          </button>
+
+          <button
+            class="mode-card"
+            data-mode="zen"
+            type="button"
+          >
+            <strong>Zen</strong>
+            <span>沒有壓力，慢慢玩</span>
+          </button>
+
+        </div>
+
+        <button
+          class="primary-button full-button"
+          id="beginButton"
+          type="button"
+        >
+          開始
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- GAME -->
+
+    <section
+      class="screen game-screen"
+      id="gameScreen"
+    >
+
+      <div class="game-layout">
+
+        <aside class="side-panel left-panel">
+
+          <div class="panel-card hold-card">
+
+            <span class="panel-label">
+              HOLD
+            </span>
+
+            <canvas
+              id="holdCanvas"
+              width="140"
+              height="100"
+            ></canvas>
+
+          </div>
+
+          <div class="panel-card">
+
+            <span class="panel-label">
+              模式
+            </span>
+
+            <strong id="modeLabel">
+              Marathon
+            </strong>
+
+          </div>
+
+          <div class="panel-card">
+
+            <span class="panel-label">
+              等級
+            </span>
+
+            <strong id="levelLabel">
+              1
+            </strong>
+
+          </div>
+
+        </aside>
+
+
+        <div class="board-column">
+
+          <div class="mobile-status">
+
+            <div>
+              <span>分數</span>
+              <strong id="scoreLabelMobile">0</strong>
+            </div>
+
+            <div>
+              <span>行數</span>
+              <strong id="linesLabelMobile">0</strong>
+            </div>
+
+          </div>
+
+
+          <div class="board-frame">
+
+            <canvas
+              id="gameCanvas"
+              aria-label="Tetris game board"
+              tabindex="0"
+            ></canvas>
+
+            <div
+              class="pause-overlay"
+              id="pauseOverlay"
+              hidden
+            >
+              <strong>
+                暫停中
+              </strong>
+
+              <button
+                class="primary-button"
+                id="resumeButton"
+                type="button"
+              >
+                繼續
+              </button>
+            </div>
+
+          </div>
+
+
+          <div class="mobile-controls">
+
+            <button
+              class="control-button"
+              data-action="hold"
+              type="button"
+            >
+              HOLD
+            </button>
+
+            <button
+              class="control-button"
+              data-action="left"
+              type="button"
+            >
+              ←
+            </button>
+
+            <button
+              class="control-button"
+              data-action="down"
+              type="button"
+            >
+              ↓
+            </button>
+
+            <button
+              class="control-button"
+              data-action="right"
+              type="button"
+            >
+              →
+            </button>
+
+            <button
+              class="control-button"
+              data-action="rotateCCW"
+              type="button"
+            >
+              ↺
+            </button>
+
+            <button
+              class="control-button"
+              data-action="rotate"
+              type="button"
+            >
+              ↻
+            </button>
+
+            <button
+              class="control-button hard-drop"
+              data-action="drop"
+              type="button"
+            >
+              DROP
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <aside class="side-panel right-panel">
+
+          <div class="panel-card">
+
+            <span class="panel-label">
+              NEXT
+            </span>
+
+            <div class="next-list">
+
+              <canvas width="120" height="70"></canvas>
+              <canvas width="120" height="70"></canvas>
+              <canvas width="120" height="70"></canvas>
+              <canvas width="120" height="70"></canvas>
+              <canvas width="120" height="70"></canvas>
+
+            </div>
+
+          </div>
+
+          <div class="panel-card score-card">
+
+            <div>
+              <span>分數</span>
+              <strong id="scoreLabel">0</strong>
+            </div>
+
+            <div>
+              <span>行數</span>
+              <strong id="linesLabel">0</strong>
+            </div>
+
+            <div>
+              <span>COMBO</span>
+              <strong id="comboLabel">0</strong>
+            </div>
+
+            <div>
+              <span>B2B</span>
+              <strong id="b2bLabel">0</strong>
+            </div>
+
+          </div>
+
+          <button
+            class="game-menu-button"
+            id="pauseButton"
+            type="button"
+          >
+            暫停
+          </button>
+
+        </aside>
+
+      </div>
+
+    </section>
+
+
+    <!-- RESULT -->
+
+    <section
+      class="screen"
+      id="resultScreen"
+    >
+
+      <div class="result-content">
+
+        <div class="result-mark">
+          <span id="resultMarkText">
+            GAME
+          </span>
+        </div>
+
+        <p
+          class="result-kicker"
+          id="resultKicker"
+        >
+          GAME COMPLETE
+        </p>
+
+        <h2 id="resultTitle">
+          遊戲結束
+        </h2>
+
+        <p id="resultDescription">
+          這次的棋局結束了。
+        </p>
+
+        <div class="result-stats">
+
+          <div>
+            <span>分數</span>
+            <strong id="resultScore">0</strong>
+          </div>
+
+          <div>
+            <span>行數</span>
+            <strong id="resultLines">0</strong>
+          </div>
+
+          <div>
+            <span>等級</span>
+            <strong id="resultLevel">1</strong>
+          </div>
+
+        </div>
+
+        <div class="result-actions">
+
+          <button
+            class="primary-button"
+            id="againButton"
+            type="button"
+          >
+            再來一局
+          </button>
+
+          <button
+            class="secondary-button"
+            id="homeButton"
+            type="button"
+          >
+            返回首頁
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- RECORDS -->
+
+    <section
+      class="screen"
+      id="recordsScreen"
+    >
+
+      <div class="screen-content">
+
+        <h2>
+          紀錄
+        </h2>
+
+        <div class="stats-grid">
+
+          <div class="stat-card">
+            <span>遊戲</span>
+            <strong id="gamesStat">0</strong>
+          </div>
+
+          <div class="stat-card">
+            <span>最高分</span>
+            <strong id="bestStat">0</strong>
+          </div>
+
+          <div class="stat-card">
+            <span>最多行</span>
+            <strong id="linesStat">0</strong>
+          </div>
+
+          <div class="stat-card">
+            <span>最佳 Sprint</span>
+            <strong id="sprintStat">—</strong>
+          </div>
+
+        </div>
+
+        <div
+          class="record-list"
+          id="recordList"
+        ></div>
+
+        <button
+          class="secondary-button full-button"
+          id="clearRecordsButton"
+          type="button"
+        >
+          清除紀錄
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- SETTINGS -->
+
+    <section
+      class="screen"
+      id="settingsScreen"
+    >
+
+      <div class="screen-content">
+
+        <h2>
+          設定
+        </h2>
+
+        <div class="settings-list">
+
+          <label class="setting-row">
+
+            <span>
+              <strong>音效</strong>
+              <small>UISFX 遊戲音效</small>
+            </span>
+
+            <input
+              id="soundToggle"
+              type="checkbox"
+              checked
+            >
+
+          </label>
+
+
+          <label class="setting-row">
+
+            <span>
+              <strong>背景音樂</strong>
+              <small>和風環境循環</small>
+            </span>
+
+            <input
+              id="musicToggle"
+              type="checkbox"
+              checked
+            >
+
+          </label>
+
+
+          <label class="setting-row">
+
+            <span>
+              <strong>Ghost</strong>
+              <small>顯示落點預覽</small>
+            </span>
+
+            <input
+              id="ghostToggle"
+              type="checkbox"
+              checked
+            >
+
+          </label>
+
+
+          <label class="setting-row">
+
+            <span>
+              <strong>震動</strong>
+              <small>支援裝置震動回饋</small>
+            </span>
+
+            <input
+              id="hapticToggle"
+              type="checkbox"
+              checked
+            >
+
+          </label>
+
+
+          <label class="setting-row">
+
+            <span>
+              <strong>動畫</strong>
+              <small>方塊與消行動畫</small>
+            </span>
+
+            <input
+              id="motionToggle"
+              type="checkbox"
+              checked
+            >
+
+          </label>
+
+
+          <label class="setting-row">
+
+            <span>
+              <strong>外觀</strong>
+              <small>系統 / 淺色 / 深色</small>
+            </span>
+
+            <select id="themeSelect">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+
+          </label>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <div
+    class="toast"
+    id="toast"
+    role="status"
+    aria-live="polite"
+  ></div>
+
+</div>
+
+
+<script
+  type="module"
+  src="./app.js"
+></script>
+
+</body>
+</html>
