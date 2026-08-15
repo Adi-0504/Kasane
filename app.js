@@ -10,8 +10,8 @@ import {
 import {
   createPiece,
   cells,
-  getShape,
-  createRandomizer
+  createRandomizer,
+  getShape
 } from "./pieces.js";
 
 import {
@@ -48,6 +48,15 @@ import {
 
 
 /* =========================================================
+   DATA
+========================================================= */
+
+const data = loadData();
+
+window.KasaneData = data;
+
+
+/* =========================================================
    DOM
 ========================================================= */
 
@@ -70,90 +79,280 @@ const screens = {
 };
 
 
-const el = {
-  back: $("#backButton"),
-  menu: $("#menuButton"),
+const elements = {
+  backButton:
+    $("#backButton"),
 
-  start: $("#startButton"),
-  records: $("#recordsButton"),
-  settings: $("#settingsButton"),
-  begin: $("#beginButton"),
+  backButtonRecords:
+    $("#backButtonRecords"),
 
-  canvas: $("#gameCanvas"),
-  holdCanvas: $("#holdCanvas"),
+  backButtonSettings:
+    $("#backButtonSettings"),
 
-  pause: $("#pauseButton"),
-  resume: $("#resumeButton"),
-  pauseOverlay: $("#pauseOverlay"),
+  menuButton:
+    $("#menuButton"),
 
-  again: $("#againButton"),
-  home: $("#homeButton"),
+  startButton:
+    $("#startButton"),
 
-  clearRecords: $("#clearRecordsButton"),
+  recordsButton:
+    $("#recordsButton"),
 
-  sound: $("#soundToggle"),
-  music: $("#musicToggle"),
-  ghost: $("#ghostToggle"),
-  haptic: $("#hapticToggle"),
-  motion: $("#motionToggle"),
-  theme: $("#themeSelect"),
+  settingsButton:
+    $("#settingsButton"),
 
-  mode: $("#modeLabel"),
-  level: $("#levelLabel"),
-  score: $("#scoreLabel"),
-  lines: $("#linesLabel"),
-  combo: $("#comboLabel"),
-  b2b: $("#b2bLabel"),
+  beginButton:
+    $("#beginButton"),
 
-  mobileScore: $("#scoreLabelMobile"),
-  mobileLines: $("#linesLabelMobile"),
+  gameCanvas:
+    $("#gameCanvas"),
 
-  best: $("#homeBestScore"),
+  holdCanvas:
+    $("#holdCanvas"),
 
-  gamesStat: $("#gamesStat"),
-  bestStat: $("#bestStat"),
-  linesStat: $("#linesStat"),
-  sprintStat: $("#sprintStat"),
-  recordList: $("#recordList"),
+  pauseButton:
+    $("#pauseButton"),
 
-  resultMark: $("#resultMarkText"),
-  resultKicker: $("#resultKicker"),
-  resultTitle: $("#resultTitle"),
-  resultDescription: $("#resultDescription"),
-  resultScore: $("#resultScore"),
-  resultLines: $("#resultLines"),
-  resultLevel: $("#resultLevel"),
+  resumeButton:
+    $("#resumeButton"),
 
-  toast: $("#toast")
+  pauseOverlay:
+    $("#pauseOverlay"),
+
+  againButton:
+    $("#againButton"),
+
+  homeButton:
+    $("#homeButton"),
+
+  clearRecordsButton:
+    $("#clearRecordsButton"),
+
+  soundToggle:
+    $("#soundToggle"),
+
+  musicToggle:
+    $("#musicToggle"),
+
+  ghostToggle:
+    $("#ghostToggle"),
+
+  hapticToggle:
+    $("#hapticToggle"),
+
+  motionToggle:
+    $("#motionToggle"),
+
+  themeSelect:
+    $("#themeSelect"),
+
+  modeLabel:
+    $("#modeLabel"),
+
+  levelLabel:
+    $("#levelLabel"),
+
+  scoreLabel:
+    $("#scoreLabel"),
+
+  linesLabel:
+    $("#linesLabel"),
+
+  comboLabel:
+    $("#comboLabel"),
+
+  b2bLabel:
+    $("#b2bLabel"),
+
+  scoreLabelMobile:
+    $("#scoreLabelMobile"),
+
+  linesLabelMobile:
+    $("#linesLabelMobile"),
+
+  homeBestScore:
+    $("#homeBestScore"),
+
+  gamesStat:
+    $("#gamesStat"),
+
+  bestStat:
+    $("#bestStat"),
+
+  linesStat:
+    $("#linesStat"),
+
+  sprintStat:
+    $("#sprintStat"),
+
+  recordList:
+    $("#recordList"),
+
+  resultMarkText:
+    $("#resultMarkText"),
+
+  resultKicker:
+    $("#resultKicker"),
+
+  resultTitle:
+    $("#resultTitle"),
+
+  resultDescription:
+    $("#resultDescription"),
+
+  resultScore:
+    $("#resultScore"),
+
+  resultLines:
+    $("#resultLines"),
+
+  resultLevel:
+    $("#resultLevel"),
+
+  toast:
+    $("#toast"),
+
+  touchHint:
+    $("#touchHint")
 };
 
 
-const canvas = el.canvas;
-const ctx = canvas?.getContext("2d");
+const canvas =
+  elements.gameCanvas;
 
-const holdCanvas = el.holdCanvas;
-const holdCtx = holdCanvas?.getContext("2d");
+const ctx =
+  canvas?.getContext("2d");
+
+const holdCanvas =
+  elements.holdCanvas;
+
+const holdCtx =
+  holdCanvas?.getContext("2d");
 
 const nextCanvases =
   $$(".next-list canvas");
 
 
 /* =========================================================
-   DATA
+   GAME STATE
 ========================================================= */
 
-const data = loadData();
+const game = {
 
-window.KasaneData = data;
+  running: false,
 
-window.KasaneSaveSettings = settings => {
+  paused: false,
 
-  data.settings = {
-    ...data.settings,
-    ...settings
-  };
+  over: false,
 
-  saveData(data);
+  mode: "marathon",
+
+  modeConfig:
+    getMode("marathon"),
+
+  board:
+    createBoard(),
+
+  randomizer:
+    createRandomizer(),
+
+  current: null,
+
+  next: [],
+
+  hold: null,
+
+  holdUsed: false,
+
+  score: 0,
+
+  lines: 0,
+
+  level: 1,
+
+  combo: -1,
+
+  b2b: false,
+
+  lastActionWasRotation:
+    false,
+
+  lockStartedAt:
+    null,
+
+  lastTime: 0,
+
+  accumulator: 0,
+
+  startTime: 0,
+
+  ultraEndTime:
+    null,
+
+  ultraRemaining:
+    120,
+
+  animationFrame:
+    null,
+
+  dropInterval:
+    900,
+
+  softDropping:
+    false,
+
+  lastClearWasSpecial:
+    false
+
+};
+
+
+/* =========================================================
+   TOUCH STATE
+========================================================= */
+
+const touch = {
+
+  active: false,
+
+  pointerId: null,
+
+  startX: 0,
+
+  startY: 0,
+
+  lastX: 0,
+
+  lastY: 0,
+
+  moved: false,
+
+  horizontalSteps: 0,
+
+  downSteps: 0,
+
+  startTime: 0,
+
+  lastTapTime: 0,
+
+  longPressTimer: null,
+
+  suppressClickUntil: 0
+
+};
+
+
+const TOUCH = {
+
+  MOVE_THRESHOLD: 22,
+
+  VERTICAL_THRESHOLD: 25,
+
+  TAP_MAX_TIME: 230,
+
+  DOUBLE_TAP_TIME: 300,
+
+  LONG_PRESS_TIME: 480
 
 };
 
@@ -165,367 +364,182 @@ window.KasaneSaveSettings = settings => {
 const translations = {
 
   "zh-TW": {
-    title: "Kasane",
-    subtitle: "一格一格，慢慢堆成自己的節奏。",
-    start: "開始遊戲",
-    records: "紀錄",
-    settings: "設定",
-    modes: "遊戲模式",
-    begin: "開始",
 
-    marathon: "Marathon",
-    marathonDesc: "一路升級，挑戰極限",
+    "home.eyebrow":
+      "STACK WITH FLOW",
 
-    sprint: "Sprint",
-    sprintDesc: "40 行速度挑戰",
+    "home.title":
+      "一層一層，堆出節奏。",
 
-    ultra: "Ultra",
-    ultraDesc: "120 秒最高分",
+    "home.description":
+      "簡單開始，越玩越順。找出屬於你的落塊節奏。",
 
-    zen: "Zen",
-    zenDesc: "沒有壓力，慢慢玩",
+    "home.play":
+      "開始遊戲",
 
-    hold: "HOLD",
-    next: "NEXT",
+    "home.records":
+      "紀錄",
 
-    score: "分數",
-    lines: "行數",
-    level: "等級",
-    combo: "COMBO",
-    b2b: "B2B",
+    "home.settings":
+      "設定",
 
-    pause: "暫停",
-    paused: "暫停中",
-    resume: "繼續",
+    "stats.best":
+      "BEST",
 
-    gameComplete: "GAME COMPLETE",
-    gameOver: "GAME OVER",
+    "stats.games":
+      "GAMES",
 
-    again: "再來一局",
-    backHome: "返回首頁",
+    "stats.lines":
+      "LINES",
 
-    recordTitle: "紀錄",
-    games: "遊戲",
-    bestScore: "最高分",
-    bestLines: "最多行",
-    bestSprint: "最佳 Sprint",
-    clearRecords: "清除紀錄",
-    emptyRecords: "還沒有棋局紀錄。",
+    "setup.kicker":
+      "GAME MODE",
 
-    settingsTitle: "設定",
-    sound: "音效",
-    soundDesc: "UISFX 遊戲音效",
-    music: "背景音樂",
-    musicDesc: "CC0 背景音樂",
-    ghost: "Ghost",
-    ghostDesc: "顯示落點預覽",
-    haptic: "震動",
-    hapticDesc: "支援裝置震動回饋",
-    motion: "動畫",
-    motionDesc: "方塊與消行動畫",
-    appearance: "外觀",
-    appearanceDesc: "系統 / 淺色 / 深色",
+    "setup.title":
+      "選擇模式",
 
-    system: "System",
-    light: "Light",
-    dark: "Dark",
+    "setup.begin":
+      "開始",
 
-    clear: "CLEAR",
-    timeUp: "時間到",
-    fortyLines: "40 行完成",
-    finished: "這局結束了",
-    completed: "完成得很好",
+    "modes.marathon":
+      "MARATHON",
 
-    perfect: "Perfect Clear",
-    tetris: "TETRIS"
-  },
+    "modes.marathonDescription":
+      "慢慢變快，挑戰自己的最高分",
 
-  "en": {
-    title: "Kasane",
-    subtitle: "One block at a time. Find your rhythm.",
-    start: "Start Game",
-    records: "Records",
-    settings: "Settings",
-    modes: "Game Mode",
-    begin: "Start",
+    "modes.sprint":
+      "SPRINT",
 
-    marathon: "Marathon",
-    marathonDesc: "Level up and push your limits",
+    "modes.sprintDescription":
+      "40 行，看你能多快完成",
 
-    sprint: "Sprint",
-    sprintDesc: "Clear 40 lines as fast as possible",
+    "modes.ultra":
+      "ULTRA",
 
-    ultra: "Ultra",
-    ultraDesc: "Get the highest score in 120 seconds",
+    "modes.ultraDescription":
+      "120 秒，分數越高越好",
 
-    zen: "Zen",
-    zenDesc: "No pressure. Just play.",
+    "game.level":
+      "LEVEL",
 
-    hold: "HOLD",
-    next: "NEXT",
+    "game.pause":
+      "暫停",
 
-    score: "SCORE",
-    lines: "LINES",
-    level: "LEVEL",
-    combo: "COMBO",
-    b2b: "B2B",
+    "game.resume":
+      "繼續",
 
-    pause: "Pause",
-    paused: "Paused",
-    resume: "Resume",
+    "game.paused":
+      "PAUSED",
 
-    gameComplete: "GAME COMPLETE",
-    gameOver: "GAME OVER",
+    "game.pausedTitle":
+      "休息一下",
 
-    again: "Play Again",
-    backHome: "Home",
+    "game.hold":
+      "HOLD",
 
-    recordTitle: "Records",
-    games: "Games",
-    bestScore: "Best Score",
-    bestLines: "Best Lines",
-    bestSprint: "Best Sprint",
-    clearRecords: "Clear Records",
-    emptyRecords: "No records yet.",
+    "game.next":
+      "NEXT",
 
-    settingsTitle: "Settings",
-    sound: "Sound",
-    soundDesc: "UISFX game sounds",
-    music: "Music",
-    musicDesc: "CC0 background music",
-    ghost: "Ghost",
-    ghostDesc: "Show landing preview",
-    haptic: "Haptics",
-    hapticDesc: "Device vibration feedback",
-    motion: "Motion",
-    motionDesc: "Block and line animations",
-    appearance: "Appearance",
-    appearanceDesc: "System / Light / Dark",
+    "game.score":
+      "SCORE",
 
-    system: "System",
-    light: "Light",
-    dark: "Dark",
+    "game.lines":
+      "LINES",
 
-    clear: "CLEAR",
-    timeUp: "Time Up",
-    fortyLines: "40 Lines",
-    finished: "Game Over",
-    completed: "Well Done",
+    "game.combo":
+      "COMBO",
 
-    perfect: "Perfect Clear",
-    tetris: "TETRIS"
-  },
+    "game.touchHint":
+      "左右拖曳移動・上滑落下・點擊旋轉",
 
-  "ja": {
-    title: "カサネ",
-    subtitle: "ひとつずつ、自分のリズムで。",
-    start: "ゲーム開始",
-    records: "記録",
-    settings: "設定",
-    modes: "ゲームモード",
-    begin: "スタート",
+    "result.score":
+      "SCORE",
 
-    marathon: "マラソン",
-    marathonDesc: "レベルを上げて限界に挑戦",
+    "result.lines":
+      "LINES",
 
-    sprint: "スプリント",
-    sprintDesc: "40ラインをできるだけ速く",
+    "result.level":
+      "LEVEL",
 
-    ultra: "ウルトラ",
-    ultraDesc: "120秒で最高スコアを目指す",
+    "result.again":
+      "再玩一次",
 
-    zen: "ゼン",
-    zenDesc: "ゆっくり遊ぼう",
+    "result.home":
+      "回首頁",
 
-    hold: "HOLD",
-    next: "NEXT",
+    "records.kicker":
+      "HISTORY",
 
-    score: "スコア",
-    lines: "ライン",
-    level: "レベル",
-    combo: "COMBO",
-    b2b: "B2B",
+    "records.title":
+      "遊戲紀錄",
 
-    pause: "一時停止",
-    paused: "一時停止中",
-    resume: "再開",
+    "records.clear":
+      "清除紀錄",
 
-    gameComplete: "GAME COMPLETE",
-    gameOver: "GAME OVER",
+    "settings.kicker":
+      "PREFERENCES",
 
-    again: "もう一度",
-    backHome: "ホーム",
+    "settings.title":
+      "設定",
 
-    recordTitle: "記録",
-    games: "ゲーム",
-    bestScore: "最高スコア",
-    bestLines: "最多ライン",
-    bestSprint: "ベストスプリント",
-    clearRecords: "記録を消去",
-    emptyRecords: "まだ記録がありません。",
+    "settings.sound":
+      "音效",
 
-    settingsTitle: "設定",
-    sound: "サウンド",
-    soundDesc: "UISFX ゲームサウンド",
-    music: "BGM",
-    musicDesc: "CC0 バックグラウンド音楽",
-    ghost: "ゴースト",
-    ghostDesc: "落下位置を表示",
-    haptic: "振動",
-    hapticDesc: "デバイスの振動",
-    motion: "アニメーション",
-    motionDesc: "ブロックとライン演出",
-    appearance: "外観",
-    appearanceDesc: "システム / ライト / ダーク",
+    "settings.soundDescription":
+      "遊戲操作音效",
 
-    system: "System",
-    light: "Light",
-    dark: "Dark",
+    "settings.music":
+      "音樂",
 
-    clear: "CLEAR",
-    timeUp: "時間切れ",
-    fortyLines: "40ライン達成",
-    finished: "ゲーム終了",
-    completed: "おつかれさま",
+    "settings.musicDescription":
+      "背景音樂",
 
-    perfect: "Perfect Clear",
-    tetris: "TETRIS"
-  },
+    "settings.ghost":
+      "Ghost",
 
-  "ko": {
-    title: "카사네",
-    subtitle: "한 칸씩, 나만의 리듬으로.",
-    start: "게임 시작",
-    records: "기록",
-    settings: "설정",
-    modes: "게임 모드",
-    begin: "시작",
+    "settings.ghostDescription":
+      "顯示落點提示",
 
-    marathon: "마라톤",
-    marathonDesc: "레벨을 올리며 한계에 도전",
+    "settings.haptic":
+      "觸覺回饋",
 
-    sprint: "스프린트",
-    sprintDesc: "40줄을 최대한 빠르게",
+    "settings.hapticDescription":
+      "操作時提供輕微震動",
 
-    ultra: "울트라",
-    ultraDesc: "120초 동안 최고 점수",
+    "settings.motion":
+      "動畫",
 
-    zen: "젠",
-    zenDesc: "천천히 편하게 플레이",
+    "settings.motionDescription":
+      "啟用介面動態效果",
 
-    hold: "HOLD",
-    next: "NEXT",
+    "settings.theme":
+      "Theme",
 
-    score: "점수",
-    lines: "줄",
-    level: "레벨",
-    combo: "COMBO",
-    b2b: "B2B",
+    "settings.themeDescription":
+      "選擇顯示主題",
 
-    pause: "일시정지",
-    paused: "일시정지 중",
-    resume: "계속",
+    "settings.system":
+      "系統",
 
-    gameComplete: "GAME COMPLETE",
-    gameOver: "GAME OVER",
+    "settings.light":
+      "淺色",
 
-    again: "다시 하기",
-    backHome: "홈으로",
+    "settings.dark":
+      "深色"
 
-    recordTitle: "기록",
-    games: "게임",
-    bestScore: "최고 점수",
-    bestLines: "최다 줄",
-    bestSprint: "최고 스프린트",
-    clearRecords: "기록 삭제",
-    emptyRecords: "아직 기록이 없습니다.",
-
-    settingsTitle: "설정",
-    sound: "효과음",
-    soundDesc: "UISFX 게임 효과음",
-    music: "배경 음악",
-    musicDesc: "CC0 배경 음악",
-    ghost: "고스트",
-    ghostDesc: "착지 위치 표시",
-    haptic: "진동",
-    hapticDesc: "기기 진동 피드백",
-    motion: "애니메이션",
-    motionDesc: "블록과 줄 삭제 효과",
-    appearance: "화면",
-    appearanceDesc: "시스템 / 라이트 / 다크",
-
-    system: "System",
-    light: "Light",
-    dark: "Dark",
-
-    clear: "CLEAR",
-    timeUp: "시간 종료",
-    fortyLines: "40줄 달성",
-    finished: "게임 종료",
-    completed: "잘했어",
-
-    perfect: "Perfect Clear",
-    tetris: "TETRIS"
   }
 
 };
 
 
-function getLanguage() {
-
-  const saved =
-    data.settings?.language;
-
-  if (
-    saved &&
-    translations[saved]
-  ) {
-
-    return saved;
-
-  }
-
-  const browser =
-    navigator.language
-      ?.toLowerCase();
-
-  if (
-    browser.startsWith("ja")
-  ) {
-
-    return "ja";
-
-  }
-
-  if (
-    browser.startsWith("ko")
-  ) {
-
-    return "ko";
-
-  }
-
-  if (
-    browser.startsWith("en")
-  ) {
-
-    return "en";
-
-  }
-
-  return "zh-TW";
-
-}
+let currentLanguage =
+  "zh-TW";
 
 
 function t(key) {
 
-  const language =
-    getLanguage();
-
   return (
-    translations[language]?.[key] ??
-    translations["zh-TW"][key] ??
+    translations[currentLanguage]?.[key] ||
     key
   );
 
@@ -534,123 +548,37 @@ function t(key) {
 
 function applyI18n() {
 
-  document
-    .querySelectorAll(
-      "[data-i18n]"
-    )
+  $$("[data-i18n]")
     .forEach(
-      node => {
+      element => {
 
         const key =
-          node.dataset.i18n;
+          element.dataset.i18n;
 
-        const value =
+        element.textContent =
           t(key);
-
-        if (
-          value != null
-        ) {
-
-          node.textContent =
-            value;
-
-        }
 
       }
     );
 
-  document.documentElement.lang =
-    getLanguage();
-
 }
 
 
-/* =========================================================
-   GAME STATE
-========================================================= */
+window.KasaneSetLanguage =
+  language => {
 
-const game = {
+    if (
+      translations[language]
+    ) {
 
-  running: false,
-  paused: false,
-  over: false,
+      currentLanguage =
+        language;
 
-  mode: "marathon",
-  modeConfig:
-    getMode("marathon"),
+      applyI18n();
 
-  board:
-    createBoard(),
+    }
 
-  randomizer:
-    createRandomizer(),
-
-  current: null,
-  next: [],
-  hold: null,
-
-  holdUsed: false,
-
-  score: 0,
-  lines: 0,
-  level: 1,
-
-  combo: -1,
-  b2b: false,
-
-  lastActionWasRotation: false,
-
-  dropInterval: 900,
-  accumulator: 0,
-
-  lastTime: 0,
-  startTime: 0,
-
-  animationFrame: null,
-
-  softDropping: false,
-
-  ultraEndTime: null,
-  ultraRemaining: 120,
-
-  touch: {
-
-    active: false,
-    id: null,
-
-    startX: 0,
-    startY: 0,
-
-    lastX: 0,
-    lastY: 0,
-
-    startTime: 0,
-
-    moved: false,
-
-    actionStarted: false,
-
-    longPressTriggered: false,
-
-    longPressTimer: null,
-
-    repeatTimer: null,
-
-    softDropTimer: null
-
-  }
-
-};
-
-
-let selectedMode =
-  "marathon";
-
-let currentScreen =
-  "home";
-
-let toastTimer =
-  null;
+  };
 
 
 /* =========================================================
@@ -659,44 +587,44 @@ let toastTimer =
 
 function syncSettings() {
 
-  if (el.sound) {
+  if (elements.soundToggle) {
 
-    el.sound.checked =
+    elements.soundToggle.checked =
       data.settings.sound !== false;
 
   }
 
-  if (el.music) {
+  if (elements.musicToggle) {
 
-    el.music.checked =
+    elements.musicToggle.checked =
       data.settings.music !== false;
 
   }
 
-  if (el.ghost) {
+  if (elements.ghostToggle) {
 
-    el.ghost.checked =
+    elements.ghostToggle.checked =
       data.settings.ghost !== false;
 
   }
 
-  if (el.haptic) {
+  if (elements.hapticToggle) {
 
-    el.haptic.checked =
+    elements.hapticToggle.checked =
       data.settings.haptic !== false;
 
   }
 
-  if (el.motion) {
+  if (elements.motionToggle) {
 
-    el.motion.checked =
+    elements.motionToggle.checked =
       data.settings.motion !== false;
 
   }
 
-  if (el.theme) {
+  if (elements.themeSelect) {
 
-    el.theme.value =
+    elements.themeSelect.value =
       data.settings.theme ||
       "system";
 
@@ -726,11 +654,23 @@ function updateSetting(
 
 function applyTheme() {
 
+  const theme =
+    data.settings.theme ||
+    "system";
+
   document.documentElement
     .dataset
     .theme =
-      data.settings.theme ||
-      "system";
+      theme;
+
+}
+
+
+function initializeSettings() {
+
+  syncSettings();
+
+  applyTheme();
 
 }
 
@@ -739,13 +679,18 @@ function applyTheme() {
    NAVIGATION
 ========================================================= */
 
+let currentScreen =
+  "home";
+
+
 function showScreen(
   name
 ) {
 
   Object.entries(
     screens
-  ).forEach(
+  )
+  .forEach(
     ([key, screen]) => {
 
       if (!screen) {
@@ -760,41 +705,39 @@ function showScreen(
     }
   );
 
+
   currentScreen =
     name;
 
-  if (
-    name === "home"
-  ) {
+
+  if (name === "home") {
 
     updateHome();
 
   }
 
-  if (
-    name === "records"
-  ) {
+
+  if (name === "records") {
 
     renderRecords();
 
   }
 
-  if (
-    name === "settings"
-  ) {
+
+  if (name === "settings") {
 
     syncSettings();
 
   }
 
-  if (
-    name === "game"
-  ) {
+
+  if (name === "game") {
 
     requestAnimationFrame(
       () => {
 
         resizeCanvas();
+
         draw();
 
       }
@@ -807,8 +750,6 @@ function showScreen(
 
 function goHome() {
 
-  cleanupTouch();
-
   if (
     game.running &&
     !game.over
@@ -818,9 +759,7 @@ function goHome() {
 
   }
 
-  showScreen(
-    "home"
-  );
+  showScreen("home");
 
 }
 
@@ -828,6 +767,10 @@ function goHome() {
 /* =========================================================
    MODE
 ========================================================= */
+
+let selectedMode =
+  "marathon";
+
 
 function setupModeSelection() {
 
@@ -874,12 +817,9 @@ function setupModeSelection() {
 
 function fillNextQueue() {
 
-  const count =
-    CONFIG.NEXT_COUNT || 5;
-
   while (
     game.next.length <
-    count
+    CONFIG.NEXT_COUNT
   ) {
 
     game.next.push(
@@ -914,8 +854,6 @@ function takeNextPiece() {
 function startGame(
   modeId = selectedMode
 ) {
-
-  cleanupTouch();
 
   unlockAudio();
 
@@ -967,6 +905,9 @@ function startGame(
   game.lastActionWasRotation =
     false;
 
+  game.lockStartedAt =
+    null;
+
   game.accumulator =
     0;
 
@@ -987,37 +928,40 @@ function startGame(
         1000
       : null;
 
+  game.softDropping =
+    false;
+
+
   fillNextQueue();
+
 
   game.current =
     takeNextPiece();
+
 
   updateGravity();
 
   updateGameUI();
 
-  if (
-    el.pauseOverlay
-  ) {
-
-    el.pauseOverlay.hidden =
-      true;
-
-  }
-
   showScreen(
     "game"
   );
 
+  resetTouchState();
+
   focusGameCanvas();
+
+  hideTouchHintLater();
 
   playSFX(
     SFX.resume
   );
 
+
   cancelAnimationFrame(
     game.animationFrame
   );
+
 
   game.animationFrame =
     requestAnimationFrame(
@@ -1043,18 +987,18 @@ function loop(
 
   }
 
+
   const delta =
     Math.min(
       100,
-      Math.max(
-        0,
-        timestamp -
-        game.lastTime
-      )
+      timestamp -
+      game.lastTime
     );
+
 
   game.lastTime =
     timestamp;
+
 
   if (
     !game.paused &&
@@ -1068,7 +1012,9 @@ function loop(
 
   }
 
+
   draw();
+
 
   game.animationFrame =
     requestAnimationFrame(
@@ -1099,8 +1045,10 @@ function update(
         timestamp
       );
 
+
     game.ultraRemaining =
       remaining / 1000;
+
 
     if (
       remaining <= 0
@@ -1116,17 +1064,20 @@ function update(
 
   }
 
+
   game.accumulator +=
     delta;
+
 
   const interval =
     game.softDropping
       ? Math.max(
-          25,
+          45,
           game.dropInterval /
-          (CONFIG.SOFT_DROP_FACTOR || 20)
+          CONFIG.SOFT_DROP_FACTOR
         )
       : game.dropInterval;
+
 
   while (
     game.accumulator >=
@@ -1136,6 +1087,7 @@ function update(
     game.accumulator -=
       interval;
 
+
     const moved =
       tryMove(
         game.board,
@@ -1144,22 +1096,44 @@ function update(
         1
       );
 
-    if (
-      moved
-    ) {
+
+    if (moved) {
 
       game.current =
         moved;
 
+      game.lockStartedAt =
+        null;
+
     } else {
 
-      lockPiece();
+      if (
+        game.lockStartedAt ===
+        null
+      ) {
 
-      break;
+        game.lockStartedAt =
+          timestamp;
+
+      }
+
+
+      if (
+        timestamp -
+        game.lockStartedAt >=
+        CONFIG.LOCK_DELAY
+      ) {
+
+        lockPiece();
+
+        break;
+
+      }
 
     }
 
   }
+
 
   updateGameUI();
 
@@ -1178,12 +1152,10 @@ function updateGravity() {
       game.mode
     );
 
+
   game.dropInterval =
-    Math.max(
-      40,
-      game.modeConfig.gravity(
-        game.level
-      )
+    game.modeConfig.gravity(
+      game.level
     );
 
 }
@@ -1197,13 +1169,12 @@ function moveHorizontal(
   direction
 ) {
 
-  if (
-    !canPlay()
-  ) {
+  if (!canPlay()) {
 
     return false;
 
   }
+
 
   const moved =
     tryMove(
@@ -1213,26 +1184,33 @@ function moveHorizontal(
       0
     );
 
-  if (
-    !moved
-  ) {
+
+  if (!moved) {
 
     return false;
 
   }
 
+
   game.current =
     moved;
+
 
   game.lastActionWasRotation =
     false;
 
+  game.lockStartedAt =
+    null;
+
+
   playSFX(
     SFX.move,
     {
-      cooldownMs: 35
+      cooldownMs:
+        35
     }
   );
+
 
   vibrate(4);
 
@@ -1249,13 +1227,12 @@ function moveHorizontal(
 
 function softDrop() {
 
-  if (
-    !canPlay()
-  ) {
+  if (!canPlay()) {
 
     return false;
 
   }
+
 
   const moved =
     tryMove(
@@ -1265,22 +1242,27 @@ function softDrop() {
       1
     );
 
-  if (
-    !moved
-  ) {
+
+  if (!moved) {
 
     return false;
 
   }
 
+
   game.current =
     moved;
+
 
   game.lastActionWasRotation =
     false;
 
   game.score +=
     CONFIG.SCORE.softDrop;
+
+  game.lockStartedAt =
+    null;
+
 
   draw();
 
@@ -1295,16 +1277,16 @@ function softDrop() {
 
 function hardDrop() {
 
-  if (
-    !canPlay()
-  ) {
+  if (!canPlay()) {
 
     return;
 
   }
 
+
   let distance =
     0;
+
 
   while (true) {
 
@@ -1316,13 +1298,13 @@ function hardDrop() {
         1
       );
 
-    if (
-      !moved
-    ) {
+
+    if (!moved) {
 
       break;
 
     }
+
 
     game.current =
       moved;
@@ -1331,13 +1313,16 @@ function hardDrop() {
 
   }
 
+
   game.score +=
     distance *
     CONFIG.SCORE.hardDrop;
 
+
   playSFX(
     SFX.drop
   );
+
 
   vibrate(10);
 
@@ -1351,16 +1336,15 @@ function hardDrop() {
 ========================================================= */
 
 function rotate(
-  direction
+  direction = 1
 ) {
 
-  if (
-    !canPlay()
-  ) {
+  if (!canPlay()) {
 
     return false;
 
   }
+
 
   const result =
     tryRotate(
@@ -1369,26 +1353,33 @@ function rotate(
       direction
     );
 
-  if (
-    !result
-  ) {
+
+  if (!result) {
 
     return false;
 
   }
 
+
   game.current =
     result.piece;
+
 
   game.lastActionWasRotation =
     true;
 
+  game.lockStartedAt =
+    null;
+
+
   playSFX(
     SFX.rotate,
     {
-      cooldownMs: 40
+      cooldownMs:
+        40
     }
   );
+
 
   vibrate(4);
 
@@ -1414,14 +1405,14 @@ function holdPiece() {
 
   }
 
+
   const currentType =
     game.current.type;
 
-  if (
-    game.hold
-  ) {
 
-    const nextType =
+  if (game.hold) {
+
+    const holdType =
       game.hold;
 
     game.hold =
@@ -1429,7 +1420,7 @@ function holdPiece() {
 
     game.current =
       createPiece(
-        nextType
+        holdType
       );
 
   } else {
@@ -1442,15 +1433,21 @@ function holdPiece() {
 
   }
 
+
   game.holdUsed =
     true;
+
+  game.lockStartedAt =
+    null;
 
   game.lastActionWasRotation =
     false;
 
+
   playSFX(
     SFX.hold
   );
+
 
   vibrate(7);
 
@@ -1465,14 +1462,12 @@ function holdPiece() {
 
 function lockPiece() {
 
-  if (
-    !game.current ||
-    game.over
-  ) {
+  if (!game.current) {
 
     return;
 
   }
+
 
   const wasTSpin =
     isTSpin(
@@ -1481,30 +1476,37 @@ function lockPiece() {
       game.lastActionWasRotation
     );
 
+
   game.board =
     merge(
       game.board,
       game.current
     );
 
+
   playSFX(
     SFX.lock
   );
+
 
   const result =
     clearLines(
       game.board
     );
 
+
   game.board =
     result.board;
+
 
   const cleared =
     result.lines;
 
-  if (
-    wasTSpin
-  ) {
+
+  if (wasTSpin) {
+
+    game.lastClearWasSpecial =
+      true;
 
     scoreTSpin(
       cleared
@@ -1523,21 +1525,26 @@ function lockPiece() {
     game.combo =
       -1;
 
+    game.lastClearWasSpecial =
+      false;
+
   }
+
 
   game.lines +=
     cleared;
 
+
   updateGravity();
 
-  if (
-    cleared > 0
-  ) {
+
+  if (cleared > 0) {
 
     playClearSound(
       cleared,
       wasTSpin
     );
+
 
     vibrate(
       cleared >= 4
@@ -1547,21 +1554,23 @@ function lockPiece() {
 
   }
 
+
   if (
-    cleared > 0 &&
     isPerfectClear(
       game.board
-    )
+    ) &&
+    cleared > 0
   ) {
 
     game.score +=
       CONFIG.SCORE.perfectClear;
 
     showToast(
-      t("perfect")
+      "Perfect Clear"
     );
 
   }
+
 
   if (
     game.mode === "sprint" &&
@@ -1569,22 +1578,26 @@ function lockPiece() {
     game.modeConfig.target
   ) {
 
-    finishGame(
-      true
-    );
+    finishGame(true);
 
     return;
 
   }
 
+
   game.current =
     takeNextPiece();
+
 
   game.holdUsed =
     false;
 
+  game.lockStartedAt =
+    null;
+
   game.lastActionWasRotation =
     false;
+
 
   if (
     collides(
@@ -1593,9 +1606,7 @@ function lockPiece() {
     )
   ) {
 
-    finishGame(
-      false
-    );
+    finishGame(false);
 
   }
 
@@ -1610,8 +1621,8 @@ function scoreNormalClear(
   lines
 ) {
 
-  game.combo +=
-    1;
+  game.combo += 1;
+
 
   let score =
     scoringLines(
@@ -1619,13 +1630,12 @@ function scoreNormalClear(
       game.level
     );
 
+
   if (
     lines === 4
   ) {
 
-    if (
-      game.b2b
-    ) {
+    if (game.b2b) {
 
       score =
         Math.floor(
@@ -1644,6 +1654,7 @@ function scoreNormalClear(
 
   }
 
+
   if (
     game.combo > 0
   ) {
@@ -1658,6 +1669,7 @@ function scoreNormalClear(
 
   }
 
+
   game.score +=
     score;
 
@@ -1671,42 +1683,34 @@ function scoreTSpin(
   game.combo +=
     1;
 
-  let score;
 
-  if (
-    lines === 1
-  ) {
+  let score =
+    CONFIG.SCORE.tSpinMini;
+
+
+  if (lines === 1) {
 
     score =
       CONFIG.SCORE.tSpinSingle;
 
-  } else if (
-    lines === 2
-  ) {
+  } else if (lines === 2) {
 
     score =
       CONFIG.SCORE.tSpinDouble;
 
-  } else if (
-    lines === 3
-  ) {
+  } else if (lines === 3) {
 
     score =
       CONFIG.SCORE.tSpinTriple;
 
-  } else {
-
-    score =
-      CONFIG.SCORE.tSpinMini;
-
   }
+
 
   score *=
     game.level;
 
-  if (
-    game.b2b
-  ) {
+
+  if (game.b2b) {
 
     score =
       Math.floor(
@@ -1715,11 +1719,14 @@ function scoreTSpin(
 
   }
 
+
   game.b2b =
     lines > 0;
 
+
   game.score +=
     score;
+
 
   playSFX(
     SFX.tSpin
@@ -1733,9 +1740,7 @@ function playClearSound(
   tSpin
 ) {
 
-  if (
-    tSpin
-  ) {
+  if (tSpin) {
 
     playSFX(
       SFX.tSpin
@@ -1745,21 +1750,21 @@ function playClearSound(
 
   }
 
-  if (
-    lines >= 4
-  ) {
+
+  if (lines >= 4) {
 
     playSFX(
       SFX.tetris
     );
 
     showToast(
-      t("tetris")
+      "TETRIS"
     );
 
     return;
 
   }
+
 
   playSFX(
     SFX.line
@@ -1783,11 +1788,8 @@ function pauseGame() {
 
   }
 
-  cleanupTouch();
 
-  if (
-    game.paused
-  ) {
+  if (game.paused) {
 
     resumeGame();
 
@@ -1795,24 +1797,26 @@ function pauseGame() {
 
   }
 
+
   game.paused =
     true;
 
   game.softDropping =
     false;
 
-  if (
-    el.pauseOverlay
-  ) {
 
-    el.pauseOverlay.hidden =
+  if (elements.pauseOverlay) {
+
+    elements.pauseOverlay.hidden =
       false;
 
   }
 
+
   playSFX(
     SFX.pause
   );
+
 
   draw();
 
@@ -1830,7 +1834,6 @@ function resumeGame() {
 
   }
 
-  cleanupTouch();
 
   game.paused =
     false;
@@ -1841,20 +1844,21 @@ function resumeGame() {
   game.accumulator =
     0;
 
-  if (
-    el.pauseOverlay
-  ) {
 
-    el.pauseOverlay.hidden =
+  if (elements.pauseOverlay) {
+
+    elements.pauseOverlay.hidden =
       true;
 
   }
+
 
   unlockAudio();
 
   playSFX(
     SFX.resume
   );
+
 
   focusGameCanvas();
 
@@ -1871,15 +1875,12 @@ function finishGame(
   completed
 ) {
 
-  if (
-    game.over
-  ) {
+  if (game.over) {
 
     return;
 
   }
 
-  cleanupTouch();
 
   game.over =
     true;
@@ -1893,15 +1894,18 @@ function finishGame(
   game.softDropping =
     false;
 
+
   cancelAnimationFrame(
     game.animationFrame
   );
+
 
   const elapsed =
     (
       performance.now() -
       game.startTime
     ) / 1000;
+
 
   const result = {
 
@@ -1929,13 +1933,16 @@ function finishGame(
 
   };
 
+
   recordGame(
     data,
     result
   );
 
+
   window.KasaneData =
     data;
+
 
   playSFX(
     completed
@@ -1943,17 +1950,17 @@ function finishGame(
       : SFX.gameover
   );
 
+
   vibrate(
     completed
-      ? 35
-      : 60
+      ? 32
+      : 55
   );
+
 
   showResult(
     result
   );
-
-  updateHome();
 
 }
 
@@ -1966,105 +1973,98 @@ function showResult(
   result
 ) {
 
-  if (
-    el.resultScore
-  ) {
+  if (elements.resultScore) {
 
-    el.resultScore.textContent =
+    elements.resultScore.textContent =
       String(
         result.score
       );
 
   }
 
-  if (
-    el.resultLines
-  ) {
 
-    el.resultLines.textContent =
+  if (elements.resultLines) {
+
+    elements.resultLines.textContent =
       String(
         result.lines
       );
 
   }
 
-  if (
-    el.resultLevel
-  ) {
 
-    el.resultLevel.textContent =
+  if (elements.resultLevel) {
+
+    elements.resultLevel.textContent =
       String(
         result.level
       );
 
   }
 
-  if (
-    el.resultMark
-  ) {
 
-    el.resultMark.textContent =
+  if (elements.resultMarkText) {
+
+    elements.resultMarkText.textContent =
       result.completed
-        ? t("clear")
+        ? "CLEAR"
         : "GAME";
 
   }
 
-  if (
-    el.resultKicker
-  ) {
 
-    el.resultKicker.textContent =
+  if (elements.resultKicker) {
+
+    elements.resultKicker.textContent =
       result.completed
-        ? t("gameComplete")
-        : t("gameOver");
+        ? "GAME COMPLETE"
+        : "GAME OVER";
 
   }
 
-  if (
-    el.resultTitle
-  ) {
+
+  if (elements.resultTitle) {
 
     if (
       result.mode === "sprint" &&
       result.completed
     ) {
 
-      el.resultTitle.textContent =
-        t("fortyLines");
+      elements.resultTitle.textContent =
+        "40 行完成";
 
     } else if (
       result.mode === "ultra"
     ) {
 
-      el.resultTitle.textContent =
-        t("timeUp");
+      elements.resultTitle.textContent =
+        "時間到";
 
     } else {
 
-      el.resultTitle.textContent =
+      elements.resultTitle.textContent =
         result.completed
-          ? t("completed")
-          : t("finished");
+          ? "完成得很好"
+          : "這局結束了";
 
     }
 
   }
 
-  if (
-    el.resultDescription
-  ) {
 
-    el.resultDescription.textContent =
+  if (elements.resultDescription) {
+
+    elements.resultDescription.textContent =
       result.mode === "sprint"
         ? (
             result.completed
-              ? `${formatTime(result.time)}`
-              : `${result.lines} ${t("lines")}`
+              ? `用時 ${formatTime(result.time)}`
+              : `已完成 ${result.lines} 行`
           )
-        : `${result.lines} ${t("lines")} · ${result.score}`;
+        : `${result.lines} 行 · ${result.score} 分`;
 
   }
+
 
   showScreen(
     "result"
@@ -2074,7 +2074,7 @@ function showResult(
 
 
 /* =========================================================
-   PLAY CHECK
+   CAN PLAY
 ========================================================= */
 
 function canPlay() {
@@ -2106,30 +2106,38 @@ function resizeCanvas() {
 
   }
 
+
   const rect =
     canvas.getBoundingClientRect();
 
+
   const dpr =
     Math.min(
-      window.devicePixelRatio || 1,
+      window.devicePixelRatio ||
+      1,
       2
     );
+
 
   const width =
     Math.max(
       1,
       Math.floor(
-        rect.width * dpr
+        rect.width *
+        dpr
       )
     );
+
 
   const height =
     Math.max(
       1,
       Math.floor(
-        rect.height * dpr
+        rect.height *
+        dpr
       )
     );
+
 
   if (
     canvas.width !== width ||
@@ -2143,6 +2151,7 @@ function resizeCanvas() {
       height;
 
   }
+
 
   ctx.setTransform(
     dpr,
@@ -2161,23 +2170,33 @@ function getBoardGeometry() {
   const rect =
     canvas.getBoundingClientRect();
 
+
   const width =
     rect.width;
+
 
   const height =
     rect.height;
 
+
   const cell =
     Math.min(
-      width / CONFIG.WIDTH,
-      height / CONFIG.HEIGHT
+      width /
+        CONFIG.WIDTH,
+      height /
+        CONFIG.HEIGHT
     );
 
+
   const boardWidth =
-    cell * CONFIG.WIDTH;
+    cell *
+    CONFIG.WIDTH;
+
 
   const boardHeight =
-    cell * CONFIG.HEIGHT;
+    cell *
+    CONFIG.HEIGHT;
+
 
   return {
 
@@ -2217,10 +2236,13 @@ function draw() {
 
   }
 
+
   resizeCanvas();
+
 
   const rect =
     canvas.getBoundingClientRect();
+
 
   ctx.clearRect(
     0,
@@ -2229,34 +2251,28 @@ function draw() {
     rect.height
   );
 
+
   const g =
     getBoardGeometry();
 
-  drawBoardBackground(
-    g
-  );
 
-  drawGrid(
-    g
-  );
+  drawBoardBackground(g);
 
-  drawPlacedBlocks(
-    g
-  );
+  drawGrid(g);
 
-  if (
-    game.current
-  ) {
+  drawPlacedBlocks(g);
+
+
+  if (game.current) {
 
     if (
       data.settings.ghost !== false
     ) {
 
-      drawGhost(
-        g
-      );
+      drawGhost(g);
 
     }
+
 
     drawPiece(
       g,
@@ -2266,22 +2282,15 @@ function draw() {
 
   }
 
-  drawBoardFrame(
-    g
-  );
+
+  drawBoardFrame(g);
 
   drawSidePreviews();
 
 }
 
 
-/* =========================================================
-   BOARD DRAW
-========================================================= */
-
-function drawBoardBackground(
-  g
-) {
+function drawBoardBackground(g) {
 
   const gradient =
     ctx.createLinearGradient(
@@ -2291,18 +2300,22 @@ function drawBoardBackground(
       g.y + g.height
     );
 
+
   gradient.addColorStop(
     0,
-    "#f4ecd9"
+    "#f5efdd"
   );
+
 
   gradient.addColorStop(
     1,
-    "#e7dbc0"
+    "#e5dac1"
   );
+
 
   ctx.fillStyle =
     gradient;
+
 
   ctx.fillRect(
     g.x,
@@ -2314,17 +2327,18 @@ function drawBoardBackground(
 }
 
 
-function drawGrid(
-  g
-) {
+function drawGrid(g) {
 
   ctx.save();
 
+
   ctx.strokeStyle =
-    "rgba(71,90,97,.12)";
+    "rgba(71,90,97,0.10)";
+
 
   ctx.lineWidth =
     1;
+
 
   for (
     let x = 0;
@@ -2334,7 +2348,9 @@ function drawGrid(
 
     const px =
       g.x +
-      x * g.cell;
+      x *
+      g.cell;
+
 
     ctx.beginPath();
 
@@ -2352,6 +2368,7 @@ function drawGrid(
 
   }
 
+
   for (
     let y = 0;
     y <= CONFIG.HEIGHT;
@@ -2360,7 +2377,9 @@ function drawGrid(
 
     const py =
       g.y +
-      y * g.cell;
+      y *
+      g.cell;
+
 
     ctx.beginPath();
 
@@ -2378,17 +2397,17 @@ function drawGrid(
 
   }
 
+
   ctx.restore();
 
 }
 
 
-function drawPlacedBlocks(
-  g
-) {
+function drawPlacedBlocks(g) {
 
   const hidden =
     CONFIG.HIDDEN_ROWS;
+
 
   for (
     let y = hidden;
@@ -2405,13 +2424,13 @@ function drawPlacedBlocks(
       const type =
         game.board[y][x];
 
-      if (
-        !type
-      ) {
+
+      if (!type) {
 
         continue;
 
       }
+
 
       drawCell(
         g,
@@ -2428,9 +2447,7 @@ function drawPlacedBlocks(
 }
 
 
-function drawGhost(
-  g
-) {
+function drawGhost(g) {
 
   const gy =
     ghostY(
@@ -2438,13 +2455,21 @@ function drawGhost(
       game.current
     );
 
+
+  const ghostPiece = {
+
+    ...game.current,
+
+    y:
+      gy
+
+  };
+
+
   drawPiece(
     g,
-    {
-      ...game.current,
-      y: gy
-    },
-    0.20
+    ghostPiece,
+    0.22
   );
 
 }
@@ -2459,12 +2484,15 @@ function drawPiece(
   const hidden =
     CONFIG.HIDDEN_ROWS;
 
+
   for (
     const cell of cells(piece)
   ) {
 
     const visibleY =
-      cell.y - hidden;
+      cell.y -
+      hidden;
+
 
     if (
       visibleY < 0 ||
@@ -2474,6 +2502,7 @@ function drawPiece(
       continue;
 
     }
+
 
     drawCell(
       g,
@@ -2498,23 +2527,31 @@ function drawCell(
 
   const px =
     g.x +
-    x * g.cell;
+    x *
+    g.cell;
+
 
   const py =
     g.y +
-    y * g.cell;
+    y *
+    g.cell;
+
 
   const size =
     g.cell;
 
+
   ctx.save();
+
 
   ctx.globalAlpha =
     alpha;
 
+
   const color =
     COLORS[type] ||
     "#888";
+
 
   if (
     alpha < 1
@@ -2526,21 +2563,26 @@ function drawCell(
     ctx.lineWidth =
       Math.max(
         1,
-        size * .08
+        size * 0.07
       );
 
-    ctx.strokeRect(
-      px + size * .13,
-      py + size * .13,
-      size * .74,
-      size * .74
+    roundRect(
+      ctx,
+      px + size * 0.16,
+      py + size * 0.16,
+      size * 0.68,
+      size * 0.68,
+      size * 0.12
     );
+
+    ctx.stroke();
 
     ctx.restore();
 
     return;
 
   }
+
 
   const gradient =
     ctx.createLinearGradient(
@@ -2550,69 +2592,80 @@ function drawCell(
       py + size
     );
 
+
   gradient.addColorStop(
     0,
     lighten(
       color,
-      .15
+      0.18
     )
   );
+
 
   gradient.addColorStop(
     1,
     color
   );
 
+
   ctx.fillStyle =
     gradient;
 
+
   roundRect(
     ctx,
-    px + size * .07,
-    py + size * .07,
-    size * .86,
-    size * .86,
-    size * .16
+    px + size * 0.065,
+    py + size * 0.065,
+    size * 0.87,
+    size * 0.87,
+    size * 0.17
   );
+
 
   ctx.fill();
 
+
   ctx.strokeStyle =
-    "rgba(255,255,255,.30)";
+    "rgba(255,255,255,0.30)";
+
 
   ctx.lineWidth =
     Math.max(
       1,
-      size * .045
+      size * 0.04
     );
+
 
   roundRect(
     ctx,
-    px + size * .07,
-    py + size * .07,
-    size * .86,
-    size * .86,
-    size * .16
+    px + size * 0.065,
+    py + size * 0.065,
+    size * 0.87,
+    size * 0.87,
+    size * 0.17
   );
 
+
   ctx.stroke();
+
 
   ctx.restore();
 
 }
 
 
-function drawBoardFrame(
-  g
-) {
+function drawBoardFrame(g) {
 
   ctx.save();
 
+
   ctx.strokeStyle =
-    "rgba(71,90,97,.42)";
+    "rgba(71,90,97,0.34)";
+
 
   ctx.lineWidth =
     2;
+
 
   ctx.strokeRect(
     g.x,
@@ -2620,6 +2673,7 @@ function drawBoardFrame(
     g.width,
     g.height
   );
+
 
   ctx.restore();
 
@@ -2638,22 +2692,24 @@ function drawSidePreviews() {
     game.hold
   );
 
-  nextCanvases.forEach(
-    (
-      target,
-      index
-    ) => {
 
-      drawMiniPiece(
-        target.getContext(
-          "2d"
-        ),
-        target,
-        game.next[index]
-      );
+  nextCanvases
+    .forEach(
+      (
+        nextCanvas,
+        index
+      ) => {
 
-    }
-  );
+        drawMiniPiece(
+          nextCanvas.getContext(
+            "2d"
+          ),
+          nextCanvas,
+          game.next[index]
+        );
+
+      }
+    );
 
 }
 
@@ -2673,11 +2729,13 @@ function drawMiniPiece(
 
   }
 
+
   const width =
     targetCanvas.width;
 
   const height =
     targetCanvas.height;
+
 
   context.clearRect(
     0,
@@ -2686,13 +2744,13 @@ function drawMiniPiece(
     height
   );
 
-  if (
-    !type
-  ) {
+
+  if (!type) {
 
     return;
 
   }
+
 
   const shape =
     getShape(
@@ -2700,10 +2758,19 @@ function drawMiniPiece(
       0
     );
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
+
+  let minX =
+    Infinity;
+
+  let minY =
+    Infinity;
+
+  let maxX =
+    -Infinity;
+
+  let maxY =
+    -Infinity;
+
 
   for (
     let y = 0;
@@ -2717,13 +2784,12 @@ function drawMiniPiece(
       x++
     ) {
 
-      if (
-        !shape[y][x]
-      ) {
+      if (!shape[y][x]) {
 
         continue;
 
       }
+
 
       minX =
         Math.min(
@@ -2753,20 +2819,32 @@ function drawMiniPiece(
 
   }
 
+
   const cellsWidth =
-    maxX - minX + 1;
+    maxX -
+    minX +
+    1;
+
 
   const cellsHeight =
-    maxY - minY + 1;
+    maxY -
+    minY +
+    1;
+
 
   const size =
     Math.min(
       22,
       width /
-        (cellsWidth + 1),
+        (
+          cellsWidth + 1
+        ),
       height /
-        (cellsHeight + 1)
+        (
+          cellsHeight + 1
+        )
     );
+
 
   const offsetX =
     (
@@ -2774,11 +2852,13 @@ function drawMiniPiece(
       cellsWidth * size
     ) / 2;
 
+
   const offsetY =
     (
       height -
       cellsHeight * size
     ) / 2;
+
 
   for (
     let y = 0;
@@ -2792,20 +2872,23 @@ function drawMiniPiece(
       x++
     ) {
 
-      if (
-        !shape[y][x]
-      ) {
+      if (!shape[y][x]) {
 
         continue;
 
       }
 
+
       drawMiniCell(
         context,
         offsetX +
-        (x - minX) * size,
+        (
+          x - minX
+        ) * size,
         offsetY +
-        (y - minY) * size,
+        (
+          y - minY
+        ) * size,
         size,
         COLORS[type]
       );
@@ -2827,30 +2910,37 @@ function drawMiniCell(
 
   context.save();
 
+
   context.fillStyle =
     color;
 
+
   roundRect(
     context,
-    x + size * .08,
-    y + size * .08,
-    size * .84,
-    size * .84,
-    size * .15
+    x + size * 0.08,
+    y + size * 0.08,
+    size * 0.84,
+    size * 0.84,
+    size * 0.15
   );
+
 
   context.fill();
 
+
   context.strokeStyle =
-    "rgba(255,255,255,.35)";
+    "rgba(255,255,255,0.36)";
+
 
   context.lineWidth =
     Math.max(
       1,
-      size * .04
+      size * 0.04
     );
 
+
   context.stroke();
+
 
   context.restore();
 
@@ -2863,43 +2953,47 @@ function drawMiniCell(
 
 function updateGameUI() {
 
-  if (el.mode) {
+  if (elements.modeLabel) {
 
-    el.mode.textContent =
+    elements.modeLabel.textContent =
       game.modeConfig.name;
 
   }
 
-  if (el.level) {
 
-    el.level.textContent =
+  if (elements.levelLabel) {
+
+    elements.levelLabel.textContent =
       String(
         game.level
       );
 
   }
 
-  if (el.score) {
 
-    el.score.textContent =
+  if (elements.scoreLabel) {
+
+    elements.scoreLabel.textContent =
       String(
         game.score
       );
 
   }
 
-  if (el.lines) {
 
-    el.lines.textContent =
+  if (elements.linesLabel) {
+
+    elements.linesLabel.textContent =
       String(
         game.lines
       );
 
   }
 
-  if (el.combo) {
 
-    el.combo.textContent =
+  if (elements.comboLabel) {
+
+    elements.comboLabel.textContent =
       String(
         Math.max(
           0,
@@ -2909,45 +3003,60 @@ function updateGameUI() {
 
   }
 
-  if (el.b2b) {
 
-    el.b2b.textContent =
+  if (elements.b2bLabel) {
+
+    elements.b2bLabel.textContent =
       game.b2b
         ? "ON"
         : "0";
 
   }
 
-  if (el.mobileScore) {
 
-    el.mobileScore.textContent =
+  if (elements.scoreLabelMobile) {
+
+    elements.scoreLabelMobile.textContent =
       String(
         game.score
       );
 
   }
 
-  if (el.mobileLines) {
 
-    el.mobileLines.textContent =
+  if (elements.linesLabelMobile) {
+
+    elements.linesLabelMobile.textContent =
       String(
         game.lines
       );
 
   }
 
+
+  drawSidePreviews();
+
 }
 
 
 function updateHome() {
 
-  if (
-    el.best
-  ) {
+  if (elements.homeBestScore) {
 
-    el.best.textContent =
+    elements.homeBestScore.textContent =
       String(
-        data.stats?.bestScore ||
+        data.stats.bestScore ||
+        0
+      );
+
+  }
+
+
+  if (elements.gamesStat) {
+
+    elements.gamesStat.textContent =
+      String(
+        data.stats.games ||
         0
       );
 
@@ -2962,75 +3071,84 @@ function updateHome() {
 
 function renderRecords() {
 
-  if (el.gamesStat) {
+  if (elements.gamesStat) {
 
-    el.gamesStat.textContent =
+    elements.gamesStat.textContent =
       String(
-        data.stats?.games || 0
+        data.stats.games ||
+        0
       );
 
   }
 
-  if (el.bestStat) {
 
-    el.bestStat.textContent =
+  if (elements.bestStat) {
+
+    elements.bestStat.textContent =
       String(
-        data.stats?.bestScore || 0
+        data.stats.bestScore ||
+        0
       );
 
   }
 
-  if (el.linesStat) {
 
-    el.linesStat.textContent =
+  if (elements.linesStat) {
+
+    elements.linesStat.textContent =
       String(
-        data.stats?.bestLines || 0
+        data.stats.bestLines ||
+        0
       );
 
   }
 
-  if (el.sprintStat) {
 
-    el.sprintStat.textContent =
+  if (elements.sprintStat) {
+
+    elements.sprintStat.textContent =
       formatTime(
-        data.stats?.bestSprint || 0
+        data.stats.bestSprint
       );
 
   }
 
-  if (
-    !el.recordList
-  ) {
+
+  if (!elements.recordList) {
 
     return;
 
   }
 
-  el.recordList.innerHTML =
+
+  elements.recordList.innerHTML =
     "";
 
-  if (
-    !data.records?.length
-  ) {
+
+  if (!data.records.length) {
 
     const empty =
       document.createElement(
         "div"
       );
 
+
     empty.className =
       "record-empty";
 
-    empty.textContent =
-      t("emptyRecords");
 
-    el.recordList.appendChild(
+    empty.textContent =
+      "還沒有棋局紀錄。";
+
+
+    elements.recordList.appendChild(
       empty
     );
 
     return;
 
   }
+
 
   data.records.forEach(
     record => {
@@ -3040,17 +3158,27 @@ function renderRecords() {
           "div"
         );
 
+
       item.className =
         "record-item";
+
 
       const date =
         new Date(
           record.date
         );
 
+
+      const dateText =
+        date.toLocaleDateString(
+          "zh-TW"
+        );
+
+
       item.innerHTML = `
 
         <div>
+
           <strong>
             ${escapeHTML(
               record.mode
@@ -3058,33 +3186,27 @@ function renderRecords() {
           </strong>
 
           <span>
-            ${date.toLocaleDateString(
-              getLanguage() === "zh-TW"
-                ? "zh-TW"
-                : getLanguage()
-            )}
+            ${dateText}
           </span>
+
         </div>
 
         <div>
+
           <strong>
-            ${Number(
-              record.score || 0
-            )}
+            ${record.score}
           </strong>
 
           <span>
-            ${Number(
-              record.lines || 0
-            )} ${escapeHTML(
-              t("lines")
-            )}
+            ${record.lines} 行
           </span>
+
         </div>
 
       `;
 
-      el.recordList.appendChild(
+
+      elements.recordList.appendChild(
         item
       );
 
@@ -3105,14 +3227,17 @@ function setupKeyboard() {
     event => {
 
       if (
-        currentScreen !== "game"
+        currentScreen !==
+        "game"
       ) {
 
         return;
 
       }
 
+
       unlockAudio();
+
 
       if (
         matches(
@@ -3129,13 +3254,13 @@ function setupKeyboard() {
 
       }
 
-      if (
-        game.paused
-      ) {
+
+      if (game.paused) {
 
         return;
 
       }
+
 
       if (
         matches(
@@ -3152,6 +3277,7 @@ function setupKeyboard() {
 
       }
 
+
       if (
         matches(
           KEYS.right,
@@ -3166,6 +3292,7 @@ function setupKeyboard() {
         return;
 
       }
+
 
       if (
         matches(
@@ -3185,6 +3312,7 @@ function setupKeyboard() {
 
       }
 
+
       if (
         matches(
           KEYS.rotate,
@@ -3199,6 +3327,7 @@ function setupKeyboard() {
         return;
 
       }
+
 
       if (
         matches(
@@ -3215,6 +3344,7 @@ function setupKeyboard() {
 
       }
 
+
       if (
         matches(
           KEYS.drop,
@@ -3229,6 +3359,7 @@ function setupKeyboard() {
         return;
 
       }
+
 
       if (
         matches(
@@ -3270,91 +3401,21 @@ function setupKeyboard() {
 
 
 /* =========================================================
-   TOUCH SYSTEM
+   TOUCH CONTROLS
 ========================================================= */
-
-/*
- * Mobile controls:
- *
- * TAP
- *   -> rotate clockwise
- *
- * SWIPE LEFT
- *   -> move left
- *
- * SWIPE RIGHT
- *   -> move right
- *
- * FAST SWIPE DOWN
- *   -> hard drop
- *
- * SLOW DOWNWARD DRAG
- *   -> soft drop
- *
- * LONG PRESS
- *   -> hold piece
- *
- * Important:
- * Long press has its own state.
- * Once triggered, pointer movement can never
- * trigger another action from the same gesture.
- */
-
-const TOUCH = {
-
-  TAP_MAX_DISTANCE: 18,
-
-  TAP_MAX_TIME: 300,
-
-  LONG_PRESS_TIME: 520,
-
-  SWIPE_DISTANCE: 30,
-
-  HARD_DROP_DISTANCE: 105,
-
-  HARD_DROP_TIME: 360,
-
-  MOVE_REPEAT_DELAY: 150,
-
-  MOVE_REPEAT_RATE: 45,
-
-  SOFT_DROP_RATE: 70
-
-};
-
 
 function setupTouchControls() {
 
-  if (
-    !canvas
-  ) {
+  if (!canvas) {
 
     return;
 
   }
 
-  /*
-   * Critical for iOS Safari.
-   * Without this, the browser may interpret
-   * the gesture as page scrolling/zooming.
-   */
-
-  canvas.style.touchAction =
-    "none";
-
-  canvas.style.userSelect =
-    "none";
-
-  canvas.style.webkitUserSelect =
-    "none";
-
-  canvas.style.webkitTouchCallout =
-    "none";
-
 
   canvas.addEventListener(
     "pointerdown",
-    onPointerDown,
+    onTouchStart,
     {
       passive: false
     }
@@ -3363,7 +3424,7 @@ function setupTouchControls() {
 
   canvas.addEventListener(
     "pointermove",
-    onPointerMove,
+    onTouchMove,
     {
       passive: false
     }
@@ -3372,7 +3433,7 @@ function setupTouchControls() {
 
   canvas.addEventListener(
     "pointerup",
-    onPointerUp,
+    onTouchEnd,
     {
       passive: false
     }
@@ -3381,7 +3442,7 @@ function setupTouchControls() {
 
   canvas.addEventListener(
     "pointercancel",
-    onPointerCancel,
+    onTouchCancel,
     {
       passive: false
     }
@@ -3389,84 +3450,92 @@ function setupTouchControls() {
 
 
   canvas.addEventListener(
-    "lostpointercapture",
-    onPointerCancel,
-    {
-      passive: false
+    "pointerleave",
+    event => {
+
+      if (
+        event.pointerType ===
+        "mouse"
+      ) {
+
+        return;
+
+      }
+
     }
   );
 
 }
 
 
-function onPointerDown(
+function onTouchStart(
   event
 ) {
 
   if (
-    event.pointerType === "mouse" &&
-    event.button !== 0
+    event.pointerType ===
+    "mouse"
   ) {
 
     return;
 
   }
 
-  /*
-   * Never allow two fingers to control
-   * the same falling piece.
-   */
 
   if (
-    game.touch.active
+    currentScreen !==
+    "game"
   ) {
 
     return;
 
   }
 
-  if (
-    currentScreen !== "game" ||
-    !canPlay()
-  ) {
-
-    return;
-
-  }
 
   event.preventDefault();
 
+
   unlockAudio();
 
-  game.touch.active =
+
+  if (
+    touch.active
+  ) {
+
+    return;
+
+  }
+
+
+  touch.active =
     true;
 
-  game.touch.id =
+  touch.pointerId =
     event.pointerId;
 
-  game.touch.startX =
+  touch.startX =
     event.clientX;
 
-  game.touch.startY =
+  touch.startY =
     event.clientY;
 
-  game.touch.lastX =
+  touch.lastX =
     event.clientX;
 
-  game.touch.lastY =
+  touch.lastY =
     event.clientY;
 
-  game.touch.startTime =
+  touch.moved =
+    false;
+
+  touch.horizontalSteps =
+    0;
+
+  touch.downSteps =
+    0;
+
+  touch.startTime =
     performance.now();
-
-  game.touch.moved =
-    false;
-
-  game.touch.actionStarted =
-    false;
-
-  game.touch.longPressTriggered =
-    false;
 
 
   try {
@@ -3478,35 +3547,24 @@ function onPointerDown(
   } catch {}
 
 
-  /*
-   * Long press is HOLD.
-   *
-   * This timer runs only once.
-   * It is cancelled immediately when
-   * the finger moves.
-   */
+  clearTimeout(
+    touch.longPressTimer
+  );
 
-  game.touch.longPressTimer =
-    window.setTimeout(
+
+  touch.longPressTimer =
+    setTimeout(
       () => {
 
         if (
-          !game.touch.active ||
-          game.touch.moved ||
-          !canPlay()
+          touch.active &&
+          !touch.moved
         ) {
 
-          return;
+          touch.suppressClickUntil =
+            performance.now() + 180;
 
         }
-
-        game.touch.longPressTriggered =
-          true;
-
-        game.touch.actionStarted =
-          true;
-
-        holdPiece();
 
       },
       TOUCH.LONG_PRESS_TIME
@@ -3515,31 +3573,30 @@ function onPointerDown(
 }
 
 
-function onPointerMove(
+function onTouchMove(
   event
 ) {
 
   if (
-    !game.touch.active ||
+    !touch.active ||
     event.pointerId !==
-    game.touch.id
+    touch.pointerId
   ) {
 
     return;
 
   }
+
 
   event.preventDefault();
 
-  if (
-    !canPlay()
-  ) {
 
-    cleanupTouch();
+  if (!canPlay()) {
 
     return;
 
   }
+
 
   const x =
     event.clientX;
@@ -3547,172 +3604,82 @@ function onPointerMove(
   const y =
     event.clientY;
 
-  const totalDX =
+
+  const dx =
     x -
-    game.touch.startX;
+    touch.startX;
 
-  const totalDY =
+  const dy =
     y -
-    game.touch.startY;
+    touch.startY;
 
-  const stepDX =
+
+  const deltaX =
     x -
-    game.touch.lastX;
+    touch.lastX;
 
-  const stepDY =
+  const deltaY =
     y -
-    game.touch.lastY;
+    touch.lastY;
 
-  const absX =
-    Math.abs(
-      totalDX
-    );
-
-  const absY =
-    Math.abs(
-      totalDY
-    );
-
-
-  /*
-   * Once the finger moves enough,
-   * it is definitely NOT a long press.
-   */
 
   if (
-    absX >
-      TOUCH.TAP_MAX_DISTANCE ||
-    absY >
-      TOUCH.TAP_MAX_DISTANCE
+    Math.abs(dx) >
+    TOUCH.MOVE_THRESHOLD ||
+    Math.abs(dy) >
+    TOUCH.VERTICAL_THRESHOLD
   ) {
 
-    game.touch.moved =
+    touch.moved =
       true;
-
-    clearTimeout(
-      game.touch.longPressTimer
-    );
-
-    game.touch.longPressTimer =
-      null;
 
   }
 
 
   /*
-   * A long press already became HOLD.
+   * HORIZONTAL DRAG
    *
-   * Absolutely no other gesture is allowed
-   * to fire from this pointer session.
+   * 每跨過一格 threshold 才移動一次。
+   * 不使用 setInterval。
+   * 所以長按不會爆掉。
    */
 
-  if (
-    game.touch.longPressTriggered
-  ) {
+  const horizontalThreshold =
+    27;
 
-    game.touch.lastX =
-      x;
-
-    game.touch.lastY =
-      y;
-
-    return;
-
-  }
-
-
-  /*
-   * Horizontal movement.
-   *
-   * Every threshold crossed moves exactly one cell.
-   * This prevents a single pointermove event from
-   * generating dozens of moves.
-   */
 
   if (
-    absX >
-      TOUCH.SWIPE_DISTANCE &&
-    absX >
-      absY
+    Math.abs(dx) >=
+    horizontalThreshold
   ) {
 
-    clearTimeout(
-      game.touch.longPressTimer
-    );
+    const expectedSteps =
+      Math.trunc(
+        dx /
+        horizontalThreshold
+      );
 
-    game.touch.longPressTimer =
-      null;
 
-    game.touch.actionStarted =
-      true;
-
-    const direction =
-      totalDX > 0
-        ? 1
-        : -1;
-
-    /*
-     * Move immediately once.
-     */
-
-    moveHorizontal(
-      direction
-    );
-
-    /*
-     * After the first movement,
-     * use controlled DAS-like repeat.
-     */
-
-    if (
-      !game.touch.repeatTimer
+    while (
+      touch.horizontalSteps <
+      expectedSteps
     ) {
 
-      game.touch.repeatTimer =
-        window.setTimeout(
-          () => {
+      moveHorizontal(1);
 
-            if (
-              !game.touch.active ||
-              !canPlay() ||
-              game.touch.longPressTriggered
-            ) {
+      touch.horizontalSteps++;
 
-              return;
+    }
 
-            }
 
-            game.touch.repeatTimer =
-              window.setInterval(
-                () => {
+    while (
+      touch.horizontalSteps >
+      expectedSteps
+    ) {
 
-                  if (
-                    !game.touch.active ||
-                    !canPlay() ||
-                    game.touch.longPressTriggered
-                  ) {
+      moveHorizontal(-1);
 
-                    return;
-
-                  }
-
-                  const dx =
-                    game.touch.lastX -
-                    game.touch.startX;
-
-                  moveHorizontal(
-                    dx > 0
-                      ? 1
-                      : -1
-                  );
-
-                },
-                TOUCH.MOVE_REPEAT_RATE
-              );
-
-          },
-          TOUCH.MOVE_REPEAT_DELAY
-        );
+      touch.horizontalSteps--;
 
     }
 
@@ -3720,137 +3687,118 @@ function onPointerMove(
 
 
   /*
-   * Downward movement.
+   * DOWN DRAG
    */
 
   if (
-    absY >
-      TOUCH.SWIPE_DISTANCE &&
-    absY >
-      absX &&
-    totalDY > 0
+    dy >
+    TOUCH.VERTICAL_THRESHOLD
   ) {
 
-    clearTimeout(
-      game.touch.longPressTimer
-    );
-
-    game.touch.longPressTimer =
-      null;
-
-    game.touch.actionStarted =
-      true;
-
-    /*
-     * Fast downward swipe.
-     *
-     * It locks exactly ONCE.
-     */
-
-    const elapsed =
-      Math.max(
-        1,
-        performance.now() -
-        game.touch.startTime
+    const expectedDownSteps =
+      Math.floor(
+        dy /
+        24
       );
 
-    const velocity =
-      absY /
-      elapsed;
 
-    const hardDrop =
-      absY >=
-        TOUCH.HARD_DROP_DISTANCE ||
-      (
-        absY >= 70 &&
-        elapsed <=
-          TOUCH.HARD_DROP_TIME
-      );
-
-    if (
-      hardDrop
-    ) {
-
-      hardDropOnce();
-
-      return;
-
-    }
-
-
-    /*
-     * Slow drag:
-     * controlled soft drop.
-     */
-
-    if (
-      Math.abs(stepDY) >= 8
+    while (
+      touch.downSteps <
+      expectedDownSteps
     ) {
 
       softDrop();
 
+      touch.downSteps++;
+
     }
 
   }
 
 
-  game.touch.lastX =
+  /*
+   * Keep movement reference.
+   */
+
+  touch.lastX =
     x;
 
-  game.touch.lastY =
+  touch.lastY =
     y;
 
 }
 
 
-function onPointerUp(
+function onTouchEnd(
   event
 ) {
 
   if (
-    !game.touch.active ||
+    !touch.active ||
     event.pointerId !==
-    game.touch.id
+    touch.pointerId
   ) {
 
     return;
 
   }
+
 
   event.preventDefault();
 
-  const dx =
-    event.clientX -
-    game.touch.startX;
 
-  const dy =
-    event.clientY -
-    game.touch.startY;
+  clearTimeout(
+    touch.longPressTimer
+  );
 
-  const distance =
-    Math.hypot(
-      dx,
-      dy
-    );
 
   const elapsed =
     performance.now() -
-    game.touch.startTime;
+    touch.startTime;
+
+
+  const dx =
+    event.clientX -
+    touch.startX;
+
+  const dy =
+    event.clientY -
+    touch.startY;
+
+
+  const absX =
+    Math.abs(dx);
+
+  const absY =
+    Math.abs(dy);
+
+
+  touch.active =
+    false;
+
+
+  try {
+
+    canvas.releasePointerCapture(
+      event.pointerId
+    );
+
+  } catch {}
 
 
   /*
-   * If Hold was triggered,
-   * this pointer session is DONE.
+   * Long press:
    *
-   * This is the key fix for your
-   * "long press creates many blocks" bug.
+   * 不執行任何遊戲動作。
    */
 
   if (
-    game.touch.longPressTriggered
+    elapsed >=
+    TOUCH.LONG_PRESS_TIME &&
+    !touch.moved
   ) {
 
-    cleanupTouch();
+    resetTouchState();
 
     return;
 
@@ -3858,17 +3806,21 @@ function onPointerUp(
 
 
   /*
-   * If hard drop already happened
-   * during pointermove, don't do anything again.
+   * Swipe up:
+   *
+   * Hard drop.
    */
 
   if (
-    game.touch.actionStarted &&
-    distance >
-      TOUCH.SWIPE_DISTANCE
+    dy <
+    -TOUCH.VERTICAL_THRESHOLD &&
+    absY >
+    absX * 1.15
   ) {
 
-    cleanupTouch();
+    hardDrop();
+
+    resetTouchState();
 
     return;
 
@@ -3876,160 +3828,587 @@ function onPointerUp(
 
 
   /*
-   * Tap = clockwise rotate.
+   * Swipe down:
+   *
+   * Soft drop already happened during drag.
    */
 
   if (
-    distance <=
-      TOUCH.TAP_MAX_DISTANCE &&
+    dy >
+    TOUCH.VERTICAL_THRESHOLD &&
+    absY >
+    absX * 1.15
+  ) {
+
+    resetTouchState();
+
+    return;
+
+  }
+
+
+  /*
+   * Horizontal swipe:
+   *
+   * Movement already happened.
+   */
+
+  if (
+    absX >
+    TOUCH.MOVE_THRESHOLD &&
+    absX >
+    absY * 1.15
+  ) {
+
+    resetTouchState();
+
+    return;
+
+  }
+
+
+  /*
+   * Tap:
+   *
+   * Single tap = rotate
+   * Double tap = hold
+   */
+
+  if (
+    !touch.moved &&
     elapsed <=
-      TOUCH.TAP_MAX_TIME &&
-    canPlay()
+    TOUCH.TAP_MAX_TIME
   ) {
 
-    rotate(1);
+    const now =
+      performance.now();
+
+
+    if (
+      now -
+      touch.lastTapTime <
+      TOUCH.DOUBLE_TAP_TIME
+    ) {
+
+      touch.lastTapTime =
+        0;
+
+      holdPiece();
+
+    } else {
+
+      touch.lastTapTime =
+        now;
+
+      window.setTimeout(
+        () => {
+
+          if (
+            touch.lastTapTime ===
+            now
+          ) {
+
+            rotate(1);
+
+            touch.lastTapTime =
+              0;
+
+          }
+
+        },
+        TOUCH.DOUBLE_TAP_TIME
+      );
+
+    }
 
   }
 
 
-  cleanupTouch();
+  resetTouchState();
 
 }
 
 
-function onPointerCancel(
+function onTouchCancel(
   event
 ) {
 
   if (
-    event.pointerId ===
-    game.touch.id
-  ) {
-
-    cleanupTouch();
-
-  }
-
-}
-
-
-/*
- * Hard drop is deliberately isolated.
- *
- * There is NO interval.
- * There is NO repeat.
- * There is NO setTimeout.
- *
- * One gesture = one hard drop.
- */
-
-function hardDropOnce() {
-
-  if (
-    !game.touch.active ||
-    game.touch.longPressTriggered ||
-    !canPlay()
+    event.pointerId !==
+    touch.pointerId
   ) {
 
     return;
 
   }
 
-  game.touch.actionStarted =
-    true;
-
-  game.touch.longPressTriggered =
-    true;
 
   clearTimeout(
-    game.touch.longPressTimer
+    touch.longPressTimer
   );
 
-  game.touch.longPressTimer =
-    null;
 
-  stopTouchRepeat();
+  game.softDropping =
+    false;
 
-  hardDrop();
 
-  cleanupTouch();
+  resetTouchState();
 
 }
 
 
-/*
- * Kill every touch-related timer.
- */
+function resetTouchState() {
 
-function cleanupTouch() {
+  touch.active =
+    false;
+
+  touch.pointerId =
+    null;
+
+  touch.moved =
+    false;
+
+  touch.horizontalSteps =
+    0;
+
+  touch.downSteps =
+    0;
 
   clearTimeout(
-    game.touch.longPressTimer
+    touch.longPressTimer
   );
-
-  game.touch.longPressTimer =
-    null;
-
-  stopTouchRepeat();
-
-  clearInterval(
-    game.touch.softDropTimer
-  );
-
-  game.touch.softDropTimer =
-    null;
-
-  game.touch.active =
-    false;
-
-  game.touch.id =
-    null;
-
-  game.touch.startX =
-    0;
-
-  game.touch.startY =
-    0;
-
-  game.touch.lastX =
-    0;
-
-  game.touch.lastY =
-    0;
-
-  game.touch.startTime =
-    0;
-
-  game.touch.moved =
-    false;
-
-  game.touch.actionStarted =
-    false;
-
-  game.touch.longPressTriggered =
-    false;
-
-}
-
-
-function stopTouchRepeat() {
-
-  clearTimeout(
-    game.touch.repeatTimer
-  );
-
-  clearInterval(
-    game.touch.repeatTimer
-  );
-
-  game.touch.repeatTimer =
-    null;
 
 }
 
 
 /* =========================================================
-   CANVAS FOCUS
+   TOUCH HINT
+========================================================= */
+
+function hideTouchHintLater() {
+
+  if (
+    !elements.touchHint
+  ) {
+
+    return;
+
+  }
+
+
+  elements.touchHint.classList.remove(
+    "hidden"
+  );
+
+
+  window.setTimeout(
+    () => {
+
+      elements.touchHint?.classList.add(
+        "hidden"
+      );
+
+    },
+    4200
+  );
+
+}
+
+
+/* =========================================================
+   SETTINGS EVENTS
+========================================================= */
+
+function setupSettingsEvents() {
+
+  elements.soundToggle?.addEventListener(
+    "change",
+    () => {
+
+      updateSetting(
+        "sound",
+        elements.soundToggle.checked
+      );
+
+
+      if (
+        elements.soundToggle.checked
+      ) {
+
+        unlockAudio();
+
+      }
+
+    }
+  );
+
+
+  elements.musicToggle?.addEventListener(
+    "change",
+    () => {
+
+      updateSetting(
+        "music",
+        elements.musicToggle.checked
+      );
+
+
+      window.GomokuAudio
+        ?.setMusicEnabled
+        ?.(
+          elements.musicToggle.checked
+        );
+
+
+      if (
+        elements.musicToggle.checked
+      ) {
+
+        unlockAudio();
+
+      }
+
+    }
+  );
+
+
+  elements.ghostToggle?.addEventListener(
+    "change",
+    () => {
+
+      updateSetting(
+        "ghost",
+        elements.ghostToggle.checked
+      );
+
+
+      draw();
+
+    }
+  );
+
+
+  elements.hapticToggle?.addEventListener(
+    "change",
+    () => {
+
+      updateSetting(
+        "haptic",
+        elements.hapticToggle.checked
+      );
+
+    }
+  );
+
+
+  elements.motionToggle?.addEventListener(
+    "change",
+    () => {
+
+      updateSetting(
+        "motion",
+        elements.motionToggle.checked
+      );
+
+    }
+  );
+
+
+  elements.themeSelect?.addEventListener(
+    "change",
+    () => {
+
+      updateSetting(
+        "theme",
+        elements.themeSelect.value
+      );
+
+
+      applyTheme();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   NAVIGATION EVENTS
+========================================================= */
+
+function setupNavigation() {
+
+  elements.startButton?.addEventListener(
+    "click",
+    () => {
+
+      showScreen(
+        "setup"
+      );
+
+    }
+  );
+
+
+  elements.recordsButton?.addEventListener(
+    "click",
+    () => {
+
+      showScreen(
+        "records"
+      );
+
+    }
+  );
+
+
+  elements.settingsButton?.addEventListener(
+    "click",
+    () => {
+
+      showScreen(
+        "settings"
+      );
+
+    }
+  );
+
+
+  elements.beginButton?.addEventListener(
+    "click",
+    () => {
+
+      startGame(
+        selectedMode
+      );
+
+    }
+  );
+
+
+  elements.pauseButton?.addEventListener(
+    "click",
+    () => {
+
+      pauseGame();
+
+    }
+  );
+
+
+  elements.resumeButton?.addEventListener(
+    "click",
+    () => {
+
+      resumeGame();
+
+    }
+  );
+
+
+  elements.againButton?.addEventListener(
+    "click",
+    () => {
+
+      startGame(
+        game.mode
+      );
+
+    }
+  );
+
+
+  elements.homeButton?.addEventListener(
+    "click",
+    () => {
+
+      showScreen(
+        "home"
+      );
+
+    }
+  );
+
+
+  elements.backButton?.addEventListener(
+    "click",
+    () => {
+
+      showScreen(
+        "home"
+      );
+
+    }
+  );
+
+
+  elements.backButtonRecords?.addEventListener(
+    "click",
+    () => {
+
+      showScreen(
+        "home"
+      );
+
+    }
+  );
+
+
+  elements.backButtonSettings?.addEventListener(
+    "click",
+    () => {
+
+      showScreen(
+        "home"
+      );
+
+    }
+  );
+
+
+  elements.menuButton?.addEventListener(
+    "click",
+    () => {
+
+      pauseGame();
+
+    }
+  );
+
+
+  elements.clearRecordsButton?.addEventListener(
+    "click",
+    () => {
+
+      clearRecords(
+        data
+      );
+
+
+      showToast(
+        "紀錄已清除"
+      );
+
+
+      renderRecords();
+
+      updateHome();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   AUDIO BRIDGE
+========================================================= */
+
+function installAudioBridge() {
+
+  window.KasaneStartGame =
+    () => {
+
+      unlockAudio();
+
+    };
+
+
+  window.KasaneData =
+    data;
+
+}
+
+
+/* =========================================================
+   HAPTIC
+========================================================= */
+
+function vibrate(
+  duration
+) {
+
+  if (
+    data.settings.haptic ===
+    false
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    typeof navigator.vibrate !==
+    "function"
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    navigator.vibrate(
+      duration
+    );
+
+  } catch {}
+
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+let toastTimer =
+  null;
+
+
+function showToast(
+  message
+) {
+
+  if (!elements.toast) {
+
+    return;
+
+  }
+
+
+  elements.toast.textContent =
+    message;
+
+
+  elements.toast.classList.add(
+    "visible"
+  );
+
+
+  clearTimeout(
+    toastTimer
+  );
+
+
+  toastTimer =
+    setTimeout(
+      () => {
+
+        elements.toast.classList.remove(
+          "visible"
+        );
+
+      },
+      1300
+    );
+
+}
+
+
+/* =========================================================
+   FOCUS
 ========================================================= */
 
 function focusGameCanvas() {
@@ -4047,360 +4426,6 @@ function focusGameCanvas() {
 
 
 /* =========================================================
-   SETTINGS EVENTS
-========================================================= */
-
-function setupSettingsEvents() {
-
-  el.sound?.addEventListener(
-    "change",
-    () => {
-
-      updateSetting(
-        "sound",
-        el.sound.checked
-      );
-
-      if (
-        el.sound.checked
-      ) {
-
-        unlockAudio();
-
-      }
-
-    }
-  );
-
-
-  el.music?.addEventListener(
-    "change",
-    () => {
-
-      updateSetting(
-        "music",
-        el.music.checked
-      );
-
-      window.KasaneAudio
-        ?.setMusicEnabled
-        ?.(
-          el.music.checked
-        );
-
-      window.GomokuAudio
-        ?.setMusicEnabled
-        ?.(
-          el.music.checked
-        );
-
-      if (
-        el.music.checked
-      ) {
-
-        unlockAudio();
-
-      }
-
-    }
-  );
-
-
-  el.ghost?.addEventListener(
-    "change",
-    () => {
-
-      updateSetting(
-        "ghost",
-        el.ghost.checked
-      );
-
-      draw();
-
-    }
-  );
-
-
-  el.haptic?.addEventListener(
-    "change",
-    () => {
-
-      updateSetting(
-        "haptic",
-        el.haptic.checked
-      );
-
-    }
-  );
-
-
-  el.motion?.addEventListener(
-    "change",
-    () => {
-
-      updateSetting(
-        "motion",
-        el.motion.checked
-      );
-
-    }
-  );
-
-
-  el.theme?.addEventListener(
-    "change",
-    () => {
-
-      updateSetting(
-        "theme",
-        el.theme.value
-      );
-
-      applyTheme();
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   NAVIGATION EVENTS
-========================================================= */
-
-function setupNavigation() {
-
-  el.start?.addEventListener(
-    "click",
-    () => {
-
-      showScreen(
-        "setup"
-      );
-
-    }
-  );
-
-
-  el.records?.addEventListener(
-    "click",
-    () => {
-
-      showScreen(
-        "records"
-      );
-
-    }
-  );
-
-
-  el.settings?.addEventListener(
-    "click",
-    () => {
-
-      showScreen(
-        "settings"
-      );
-
-    }
-  );
-
-
-  el.begin?.addEventListener(
-    "click",
-    () => {
-
-      startGame(
-        selectedMode
-      );
-
-    }
-  );
-
-
-  el.pause?.addEventListener(
-    "click",
-    () => {
-
-      pauseGame();
-
-    }
-  );
-
-
-  el.resume?.addEventListener(
-    "click",
-    () => {
-
-      resumeGame();
-
-    }
-  );
-
-
-  el.again?.addEventListener(
-    "click",
-    () => {
-
-      startGame(
-        game.mode
-      );
-
-    }
-  );
-
-
-  el.home?.addEventListener(
-    "click",
-    () => {
-
-      cleanupTouch();
-
-      showScreen(
-        "home"
-      );
-
-    }
-  );
-
-
-  el.back?.addEventListener(
-    "click",
-    () => {
-
-      cleanupTouch();
-
-      showScreen(
-        "home"
-      );
-
-    }
-  );
-
-
-  el.menu?.addEventListener(
-    "click",
-    () => {
-
-      if (
-        currentScreen === "game"
-      ) {
-
-        pauseGame();
-
-        return;
-
-      }
-
-      showScreen(
-        "settings"
-      );
-
-    }
-  );
-
-
-  el.clearRecords?.addEventListener(
-    "click",
-    () => {
-
-      clearRecords(
-        data
-      );
-
-      showToast(
-        "紀錄已清除"
-      );
-
-      renderRecords();
-
-      updateHome();
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   HAPTICS
-========================================================= */
-
-function vibrate(
-  duration
-) {
-
-  if (
-    data.settings.haptic === false
-  ) {
-
-    return;
-
-  }
-
-  if (
-    typeof navigator.vibrate !==
-    "function"
-  ) {
-
-    return;
-
-  }
-
-  try {
-
-    navigator.vibrate(
-      duration
-    );
-
-  } catch {}
-
-}
-
-
-/* =========================================================
-   TOAST
-========================================================= */
-
-function showToast(
-  message
-) {
-
-  if (
-    !el.toast
-  ) {
-
-    return;
-
-  }
-
-  el.toast.textContent =
-    message;
-
-  el.toast.classList.add(
-    "visible"
-  );
-
-  clearTimeout(
-    toastTimer
-  );
-
-  toastTimer =
-    window.setTimeout(
-      () => {
-
-        el.toast.classList.remove(
-          "visible"
-        );
-
-      },
-      1300
-    );
-
-}
-
-
-/* =========================================================
    HELPERS
 ========================================================= */
 
@@ -4411,7 +4436,9 @@ function matches(
 
   return (
     Array.isArray(keys) &&
-    keys.includes(value)
+    keys.includes(
+      value
+    )
   );
 
 }
@@ -4433,13 +4460,16 @@ function roundRect(
       height / 2
     );
 
+
   context.beginPath();
+
 
   context.moveTo(
     x + r,
     y
   );
 
+
   context.arcTo(
     x + width,
     y,
@@ -4447,6 +4477,7 @@ function roundRect(
     y + height,
     r
   );
+
 
   context.arcTo(
     x + width,
@@ -4456,6 +4487,7 @@ function roundRect(
     r
   );
 
+
   context.arcTo(
     x,
     y + height,
@@ -4464,6 +4496,7 @@ function roundRect(
     r
   );
 
+
   context.arcTo(
     x,
     y,
@@ -4471,6 +4504,7 @@ function roundRect(
     y,
     r
   );
+
 
   context.closePath();
 
@@ -4483,11 +4517,11 @@ function lighten(
 ) {
 
   const value =
-    String(hex)
-      .replace(
-        "#",
-        ""
-      );
+    hex.replace(
+      "#",
+      ""
+    );
+
 
   const r =
     parseInt(
@@ -4495,11 +4529,13 @@ function lighten(
       16
     );
 
+
   const g =
     parseInt(
       value.slice(2, 4),
       16
     );
+
 
   const b =
     parseInt(
@@ -4507,35 +4543,45 @@ function lighten(
       16
     );
 
+
   const nr =
     Math.min(
       255,
       Math.round(
         r +
-        (255 - r) *
+        (
+          255 - r
+        ) *
         amount
       )
     );
+
 
   const ng =
     Math.min(
       255,
       Math.round(
         g +
-        (255 - g) *
+        (
+          255 - g
+        ) *
         amount
       )
     );
+
 
   const nb =
     Math.min(
       255,
       Math.round(
         b +
-        (255 - b) *
+        (
+          255 - b
+        ) *
         amount
       )
     );
+
 
   return `rgb(${nr}, ${ng}, ${nb})`;
 
@@ -4620,30 +4666,6 @@ document.addEventListener(
 
 
 /* =========================================================
-   PAGE SAFETY
-========================================================= */
-
-window.addEventListener(
-  "blur",
-  () => {
-
-    cleanupTouch();
-
-  }
-);
-
-
-window.addEventListener(
-  "pagehide",
-  () => {
-
-    cleanupTouch();
-
-  }
-);
-
-
-/* =========================================================
    INITIALIZE
 ========================================================= */
 
@@ -4663,6 +4685,8 @@ function init() {
 
   setupSettingsEvents();
 
+  installAudioBridge();
+
   updateHome();
 
   renderRecords();
@@ -4670,19 +4694,6 @@ function init() {
   resizeCanvas();
 
   draw();
-
-}
-
-
-/*
- * initializeSettings
- */
-
-function initializeSettings() {
-
-  syncSettings();
-
-  applyTheme();
 
 }
 
